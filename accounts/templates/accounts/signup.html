@@ -1,0 +1,104 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Account</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/login.css' %}" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <header class="card__header">
+          <h1>Create Account</h1>
+          <p>Join StayFinder today</p>
+        </header>
+
+        {% if form.errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <p>{{ error }}</p>
+            {% endfor %}
+            {% for field in form %}
+              {% for error in field.errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <form class="form" method="post">
+          {% csrf_token %}
+
+          {% with selected=form.data.account_type|default:"guest" %}
+          <div class="field">
+            <span>Account Type</span>
+            <div class="account-types">
+              <label class="account-card">
+                <input
+                  type="radio"
+                  name="account_type"
+                  value="guest"
+                  {% if selected == "guest" %}checked{% endif %}
+                />
+                <span class="account-card__icon">👤</span>
+                <span class="account-card__label">Guest</span>
+              </label>
+              <label class="account-card">
+                <input
+                  type="radio"
+                  name="account_type"
+                  value="hotel"
+                  {% if selected == "hotel" %}checked{% endif %}
+                />
+                <span class="account-card__icon">🏨</span>
+                <span class="account-card__label">Hotel</span>
+              </label>
+            </div>
+          </div>
+          {% endwith %}
+
+          <label class="field">
+            <span>Full Name</span>
+            <input
+              type="text"
+              name="full_name"
+              placeholder="John Doe"
+              value="{{ form.data.full_name|default_if_none:'' }}"
+              required
+            />
+          </label>
+
+          <label class="field">
+            <span>Email</span>
+            <input
+              type="email"
+              name="email"
+              placeholder="name@example.com"
+              value="{{ form.data.email|default_if_none:'' }}"
+              required
+            />
+          </label>
+
+          <label class="field">
+            <span>Password</span>
+            <input type="password" name="password" placeholder="Create a password" required />
+          </label>
+
+          <label class="field">
+            <span>Confirm Password</span>
+            <input type="password" name="confirm_password" placeholder="Confirm your password" required />
+          </label>
+
+          <button class="button" type="submit">
+            <span class="button__icon">＋</span>
+            Create Account
+          </button>
+
+          <p class="footer">Already have an account? <a class="link" href="{% url 'login' %}">Sign in</a></p>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

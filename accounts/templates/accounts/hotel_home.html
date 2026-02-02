@@ -1,0 +1,84 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hotel Dashboard</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/hotel-home.css' %}" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__icon">🏨</span>
+        <span class="brand__name">StayFinder</span>
+      </div>
+      <div class="topbar__actions">
+        <button class="icon-button" aria-label="Notifications">🔔</button>
+        <div class="user">
+          <span class="user__label">Hotel Account</span>
+          <span class="user__name">Grand Plaza Hotel</span>
+        </div>
+        <a class="signout-button" href="{% url 'login' %}">
+          <span class="signout-button__icon">⎋</span>
+          Sign Out
+        </a>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="page__header">
+        <div>
+          <h1>Room Management</h1>
+          <p>Manage room types, availability, and pricing.</p>
+        </div>
+        <button class="primary-button" type="button">Add New Room</button>
+      </section>
+
+      <section class="card">
+        <div class="table">
+          <div class="table__row table__row--head">
+            <div>Room Type</div>
+            <div>Capacity</div>
+            <div>Rate/Night</div>
+            <div>Available</div>
+            <div>Actions</div>
+          </div>
+
+          <div class="table__row">
+            <div class="room">
+              <div class="room__title">Deluxe Suite</div>
+              <span class="room__meta">King bed · City view</span>
+            </div>
+            <div>4 guests</div>
+            <div class="rate">$299</div>
+            <div><span class="pill pill--warning">5 rooms</span></div>
+            <div><button class="ghost-button" type="button">Edit</button></div>
+          </div>
+
+          <div class="table__row">
+            <div class="room">
+              <div class="room__title">Standard Room</div>
+              <span class="room__meta">Queen bed · Wi‑Fi</span>
+            </div>
+            <div>2 guests</div>
+            <div class="rate">$149</div>
+            <div><span class="pill pill--success">12 rooms</span></div>
+            <div><button class="ghost-button" type="button">Edit</button></div>
+          </div>
+
+          <div class="table__row">
+            <div class="room">
+              <div class="room__title">Executive Suite</div>
+              <span class="room__meta">Suite · Lounge access</span>
+            </div>
+            <div>3 guests</div>
+            <div class="rate">$249</div>
+            <div><span class="pill pill--warning">3 rooms</span></div>
+            <div><button class="ghost-button" type="button">Edit</button></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

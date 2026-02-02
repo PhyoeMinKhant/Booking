@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StayFinder</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/guest_home.css' %}" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__icon">🏨</span>
+        <span class="brand__name">StayFinder</span>
+      </div>
+      <div class="topbar__actions">
+        <button class="icon-button" aria-label="Notifications">🔔</button>
+        <div class="user">
+          <span class="user__label">Guest Account</span>
+          <span class="user__name">Sarah Johnson</span>
+        </div>
+        <a class="signout-button" href="{% url 'login' %}">
+          <span class="signout-button__icon">⎋</span>
+          Sign Out
+        </a>
+      </div>
+    </header>
+
+    <main class="hero">
+      <div class="hero__content">
+        <h1>Find Your Perfect Stay</h1>
+        <p>Search thousands of hotels worldwide</p>
+      </div>
+
+      <section class="search-card">
+        <form class="search-form" id="hotel-search-form">
+          <label class="field">
+            <span>Location</span>
+            <input type="text" placeholder="City or hotel name" />
+          </label>
+          <label class="field">
+            <span>Check-in</span>
+            <input type="date" placeholder="mm/dd/yyyy" />
+          </label>
+          <label class="field">
+            <span>Check-out</span>
+            <input type="date" placeholder="mm/dd/yyyy" />
+          </label>
+          <label class="field">
+            <span>Guests</span>
+            <input type="number" value="2" min="1" />
+          </label>
+          <button class="primary-button" type="submit">Search Hotels</button>
+        </form>
+      </section>
+
+      <section class="results" id="hotel-results" aria-live="polite">
+        <header class="results__header">
+          <h2>Available Hotels</h2>
+          <p>Found 3 hotels matching your search</p>
+          <!-- change the number depending on results found -->
+        </header>
+
+        <!-- This whole division need to change when we do crud -->
+        <div class="results__grid">
+          <article class="hotel-card">
+            <div class="hotel-card__media">🏨</div>
+            <div class="hotel-card__body">
+              <h3>Grand Plaza Hotel</h3>
+              <p class="hotel-card__location">📍 New York</p>
+              <div class="hotel-card__meta">
+                <span class="hotel-card__rating">⭐ 4.8</span>
+                <span class="hotel-card__price">$299 <small>per night</small></span>
+              </div>
+              <button class="hotel-card__action" type="button">Book Now</button>
+            </div>
+          </article>
+
+          <article class="hotel-card">
+            <div class="hotel-card__media">🏖️</div>
+            <div class="hotel-card__body">
+              <h3>Seaside Resort</h3>
+              <p class="hotel-card__location">📍 Miami Beach</p>
+              <div class="hotel-card__meta">
+                <span class="hotel-card__rating">⭐ 4.6</span>
+                <span class="hotel-card__price">$249 <small>per night</small></span>
+              </div>
+              <button class="hotel-card__action" type="button">Book Now</button>
+            </div>
+          </article>
+
+          <article class="hotel-card">
+            <div class="hotel-card__media">🏔️</div>
+            <div class="hotel-card__body">
+              <h3>Mountain View Lodge</h3>
+              <p class="hotel-card__location">📍 Denver </p>
+              <div class="hotel-card__meta">
+                <span class="hotel-card__rating">⭐ 4.7</span>
+                <span class="hotel-card__price">$189 <small>per night</small></span>
+              </div>
+              <button class="hotel-card__action" type="button">Book Now</button>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+    <script>
+      const searchForm = document.getElementById("hotel-search-form");
+      const results = document.getElementById("hotel-results");
+
+      searchForm?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        results?.classList.add("results--visible");
+        results?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    </script>
+  </body>
+</html>
