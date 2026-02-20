@@ -31,34 +31,6 @@
         <form class="form" method="post">
           {% csrf_token %}
 
-          {% with selected=form.data.account_type|default:"guest" %}
-          <div class="field">
-            <span>Account Type</span>
-            <div class="account-types">
-              <label class="account-card">
-                <input
-                  type="radio"
-                  name="account_type"
-                  value="guest"
-                  {% if selected == "guest" %}checked{% endif %}
-                />
-                <span class="account-card__icon">👤</span>
-                <span class="account-card__label">Guest</span>
-              </label>
-              <label class="account-card">
-                <input
-                  type="radio"
-                  name="account_type"
-                  value="hotel"
-                  {% if selected == "hotel" %}checked{% endif %}
-                />
-                <span class="account-card__icon">🏨</span>
-                <span class="account-card__label">Hotel</span>
-              </label>
-            </div>
-          </div>
-          {% endwith %}
-
           <label class="field">
             <span>Email</span>
             <input
@@ -74,6 +46,10 @@
             <span>Password</span>
             <input type="password" name="password" placeholder="Enter your password" required />
           </label>
+
+          <p class="helper">
+            <a class="link" href="{% url 'password_reset' %}">Forgot password?</a>
+          </p>
 
           <button class="button" type="submit">
             <span class="button__icon">→</span>

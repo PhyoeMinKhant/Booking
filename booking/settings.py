@@ -17,6 +17,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "accounts",
+    "rooms",
+    "bookings",
+    "payments",
 ]
 
 MIDDLEWARE = [
@@ -79,6 +82,11 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "no-reply@booking.local"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

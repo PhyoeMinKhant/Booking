@@ -1,0 +1,193 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guest Profile</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/guest_profile.css' %}?v=20260211b" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__icon">🏨</span>
+        <span class="brand__name">StayFinder</span>
+      </div>
+      <div class="topbar__actions">
+        <button class="icon-button icon-button--notify" aria-label="Notifications">
+          <svg class="icon-button__svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M15 17H9m8-5V9a5 5 0 0 0-10 0v3l-1.6 2.4A1 1 0 0 0 6.2 16h11.6a1 1 0 0 0 .8-1.6L17 12Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.6"
+            />
+          </svg>
+          <span class="icon-button__dot" aria-hidden="true"></span>
+        </button>
+        <details class="profile-menu">
+          <summary class="profile-trigger">
+            <span class="profile-trigger__content">
+              <span class="profile-trigger__avatar">
+                {% if profile.profile_image %}
+                  <img src="{{ profile.profile_image.url }}" alt="Profile photo" />
+                {% elif profile.profile_image_url %}
+                  <img src="{{ profile.profile_image_url }}" alt="Profile photo" />
+                {% else %}
+                  <span class="profile-trigger__initial">{{ profile.full_name|slice:":1" }}</span>
+                {% endif %}
+              </span>
+              <span class="profile-trigger__text">
+                <span class="profile-trigger__name">
+                  {{ request.user.get_full_name|default:request.user.username }}
+                </span>
+              </span>
+              <span class="profile-trigger__chevron">▾</span>
+            </span>
+          </summary>
+          <div class="profile-dropdown" role="menu">
+            <a class="profile-item" href="{% url 'guest_profile' %}" role="menuitem">
+              <span class="profile-item__icon">👤</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Account Information</span>
+                <span class="profile-item__subtitle">View your profile details</span>
+              </span>
+            </a>
+            <a class="profile-item" href="{% url 'booking_history' %}" role="menuitem">
+              <span class="profile-item__icon">📅</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Booking History</span>
+                <span class="profile-item__subtitle">View all your bookings</span>
+              </span>
+            </a>
+            <div class="profile-divider"></div>
+            <a class="profile-item profile-item--danger" href="{% url 'logout' %}" role="menuitem">
+              <span class="profile-item__icon">↗</span>
+              <span class="profile-item__title">Sign Out</span>
+            </a>
+          </div>
+        </details>
+      </div>
+    </header>
+    <main class="page">
+      <div class="profile-layout">
+        <aside class="profile-sidebar">
+          <div class="sidebar-card">
+            <h2 class="sidebar-title">Quick Links</h2>
+            <a class="sidebar-link" href="{% url 'home' %}">
+              <span class="sidebar-link__icon">🏠</span>
+              <span>Search Hotels</span>
+            </a>
+            <a class="sidebar-link" href="{% url 'guest_profile' %}">
+              <span class="sidebar-link__icon">👤</span>
+              <span>Account Information</span>
+            </a>
+            <a class="sidebar-link" href="{% url 'booking_history' %}">
+              <span class="sidebar-link__icon">📅</span>
+              <span>Booking History</span>
+            </a>
+            <a class="sidebar-link" href="#">
+              <span class="sidebar-link__icon">❤</span>
+              <span>Favorite Hotels</span>
+            </a>
+            <a class="sidebar-link sidebar-link--danger" href="{% url 'logout' %}">
+              <span class="sidebar-link__icon">↗</span>
+              <span>Logout</span>
+            </a>
+          </div>
+        </aside>
+        <section class="profile-card">
+        <header class="profile-card__header">
+          <h1>Account Information</h1>
+          <a class="close-button" href="{% url 'home' %}" aria-label="Close">✕</a>
+        </header>
+
+        <section class="profile-hero">
+          <form
+            class="profile-image-form"
+            id="profile-image-form"
+            method="post"
+            enctype="multipart/form-data"
+            action="{% url 'profile_image_update' %}"
+          >
+            {% csrf_token %}
+            <input
+              class="profile-image-input"
+              id="profile-image-input"
+              type="file"
+              name="profile_image"
+              accept="image/*"
+              hidden
+            />
+            <button
+              class="avatar avatar--editable"
+              type="button"
+              aria-label="Change profile photo"
+              data-action="pick-profile-image"
+            >
+              {% if profile.profile_image %}
+                <img src="{{ profile.profile_image.url }}" alt="Profile photo" />
+              {% elif profile.profile_image_url %}
+                <img src="{{ profile.profile_image_url }}" alt="Profile photo" />
+              {% else %}
+                <span class="avatar__initial">{{ profile.full_name|slice:":1" }}</span>
+              {% endif %}
+              <span class="avatar__badge">📷</span>
+            </button>
+          </form>
+          <div class="profile-hero__text">
+            <h2>{{ profile.full_name }}</h2>
+            <p>{{ profile.get_account_type_display }} Account</p>
+          </div>
+        </section>
+
+        <form class="field-group" method="post" action="{% url 'profile_update' %}">
+          {% csrf_token %}
+          <label class="field">
+            <span>Username</span>
+            <input type="text" name="username" value="{{ request.user.username }}" required />
+          </label>
+
+          <label class="field">
+            <span>Email Address</span>
+            <div class="field__value">{{ request.user.email|default:request.user.username }}</div>
+          </label>
+
+          <label class="field">
+            <span>Phone Number</span>
+            <input
+              type="tel"
+              name="phone_number"
+              value="{{ profile.phone_number }}"
+              placeholder="Not provided"
+            />
+          </label>
+
+          <label class="field">
+            <span>Member Since</span>
+            <div class="field__value">{{ profile.created_at|date:"F j, Y" }}</div>
+          </label>
+          <button class="primary-button profile-save" type="submit">Save Changes</button>
+        </form>
+        </section>
+      </div>
+    </main>
+    <script>
+      const pickProfileImage = document.querySelector('[data-action="pick-profile-image"]');
+      const profileImageInput = document.getElementById("profile-image-input");
+      const profileImageForm = document.getElementById("profile-image-form");
+
+      pickProfileImage?.addEventListener("click", () => {
+        profileImageInput?.click();
+      });
+
+      profileImageInput?.addEventListener("change", () => {
+        if (profileImageInput.files && profileImageInput.files.length > 0) {
+          profileImageForm?.submit();
+        }
+      });
+    </script>
+  </body>
+</html>

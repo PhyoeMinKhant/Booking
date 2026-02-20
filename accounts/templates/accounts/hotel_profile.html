@@ -1,0 +1,355 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hotel Profile</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/hotel_profile.css' %}?v=20260212a" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__icon">🏨</span>
+        <span class="brand__name">StayFinder</span>
+      </div>
+      <div class="topbar__actions">
+        <button class="icon-button icon-button--notify" aria-label="Notifications">
+          <svg class="icon-button__svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M15 17H9m8-5V9a5 5 0 0 0-10 0v3l-1.6 2.4A1 1 0 0 0 6.2 16h11.6a1 1 0 0 0 .8-1.6L17 12Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.6"
+            />
+          </svg>
+          <span class="icon-button__dot" aria-hidden="true"></span>
+        </button>
+        <details class="profile-menu">
+          <summary class="profile-trigger">
+            <span class="profile-trigger__content">
+              <span class="profile-trigger__avatar">
+                {% if profile.profile_image %}
+                  <img src="{{ profile.profile_image.url }}" alt="Profile photo" />
+                {% elif profile.profile_image_url %}
+                  <img src="{{ profile.profile_image_url }}" alt="Profile photo" />
+                {% else %}
+                  <span class="profile-trigger__initial">{{ profile.full_name|slice:":1" }}</span>
+                {% endif %}
+              </span>
+              <span class="profile-trigger__text">
+                <span class="profile-trigger__name">{{ profile.full_name }}</span>
+              </span>
+              <span class="profile-trigger__chevron">▾</span>
+            </span>
+          </summary>
+          <div class="profile-dropdown" role="menu">
+            <a class="profile-item" href="{% url 'hotel_profile' %}" role="menuitem">
+              <span class="profile-item__icon">🏨</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Account Information</span>
+                <span class="profile-item__subtitle">View hotel profile details</span>
+              </span>
+            </a>
+            <a class="profile-item" href="{% url 'hotel_booking_history' %}" role="menuitem">
+              <span class="profile-item__icon">📅</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Booking History</span>
+                <span class="profile-item__subtitle">View recent reservations</span>
+              </span>
+            </a>
+            <div class="profile-divider"></div>
+            <a class="profile-item profile-item--danger" href="{% url 'logout' %}" role="menuitem">
+              <span class="profile-item__icon">↗</span>
+              <span class="profile-item__title">Sign Out</span>
+            </a>
+          </div>
+        </details>
+      </div>
+    </header>
+    <main class="page">
+      <div class="profile-layout">
+        <aside class="profile-sidebar">
+          <div class="sidebar-card">
+            <h2 class="sidebar-title">Quick Links</h2>
+            <a class="sidebar-link" href="{% url 'hotel_home' %}">
+              <span class="sidebar-link__icon">🛏️</span>
+              <span>Room Management</span>
+            </a>
+            <a class="sidebar-link" href="{% url 'hotel_profile' %}">
+              <span class="sidebar-link__icon">🏨</span>
+              <span>Account Information</span>
+            </a>
+            <a class="sidebar-link" href="{% url 'hotel_booking_history' %}">
+              <span class="sidebar-link__icon">📅</span>
+              <span>Booking History</span>
+            </a>
+            <a class="sidebar-link sidebar-link--danger" href="{% url 'logout' %}">
+              <span class="sidebar-link__icon">↗</span>
+              <span>Logout</span>
+            </a>
+          </div>
+        </aside>
+        <section class="profile-card">
+        <header class="profile-card__header">
+          <h1>Account Information</h1>
+          <a class="close-button" href="{% url 'hotel_home' %}" aria-label="Close">✕</a>
+        </header>
+
+        <section class="profile-hero">
+          <form
+            class="profile-image-form"
+            id="profile-image-form"
+            method="post"
+            enctype="multipart/form-data"
+            action="{% url 'profile_image_update' %}"
+          >
+            {% csrf_token %}
+            <input
+              class="profile-image-input"
+              id="profile-image-input"
+              type="file"
+              name="profile_image"
+              accept="image/*"
+              hidden
+            />
+            <button
+              class="avatar avatar--editable"
+              type="button"
+              aria-label="Change profile photo"
+              data-action="pick-profile-image"
+            >
+              {% if profile.profile_image %}
+                <img src="{{ profile.profile_image.url }}" alt="Profile photo" />
+              {% elif profile.profile_image_url %}
+                <img src="{{ profile.profile_image_url }}" alt="Profile photo" />
+              {% else %}
+                <span class="avatar__initial">{{ profile.full_name|slice:":1" }}</span>
+              {% endif %}
+              <span class="avatar__badge">📷</span>
+            </button>
+          </form>
+          <div class="profile-hero__text">
+            <h2>{{ profile.full_name }}</h2>
+            <p>Hotel Account</p>
+          </div>
+        </section>
+
+        <form
+          class="field-group"
+          id="profile-update-form"
+          method="post"
+          action="{% url 'profile_update' %}"
+        >
+          {% csrf_token %}
+          <label class="field">
+            <span>Hotel Name</span>
+            <input type="text" name="username" value="{{ profile.full_name }}" required />
+          </label>
+
+          <label class="field">
+            <span>Location</span>
+            <input
+              type="text"
+              name="location"
+              value="{{ profile.location }}"
+              placeholder="City or neighborhood"
+            />
+          </label>
+
+          <label class="field">
+            <span>Phone Number</span>
+            <input
+              type="tel"
+              name="phone_number"
+              value="{{ profile.phone_number }}"
+              placeholder="Not provided"
+            />
+          </label>
+
+          <label class="field">
+            <span>Rating</span>
+            <div class="field__value">Not rated</div>
+          </label>
+        </form>
+        <section class="facility-section">
+          <header class="facility-header">
+            <div>
+              <h2>Hotel Facilities</h2>
+              <p>Showcase amenities like the lobby, pool, or gym.</p>
+            </div>
+            <form
+              class="facility-upload"
+              method="post"
+              enctype="multipart/form-data"
+              action="{% url 'facility_image_upload' %}"
+            >
+              {% csrf_token %}
+              <input
+                type="file"
+                name="facility_images"
+                accept="image/*"
+                multiple
+                {% if facility_remaining == 0 %}disabled{% endif %}
+              />
+              <button
+                class="primary-button"
+                type="submit"
+                {% if facility_remaining == 0 %}disabled{% endif %}
+              >
+                Upload Photos
+              </button>
+            </form>
+          </header>
+          <div class="facility-slideshow" data-slideshow>
+            {% if facility_images %}
+              <button
+                class="slideshow-control slideshow-control--prev"
+                type="button"
+                data-action="prev-slide"
+                aria-label="Previous photo"
+              >
+                ‹
+              </button>
+              <div class="slideshow-track" data-slides>
+                {% for image in facility_images %}
+                  <div class="slideshow-slide{% if forloop.first %} is-active{% endif %}">
+                    <img src="{{ image.image.url }}" alt="Hotel facility" />
+                    <div class="slideshow-actions">
+                      <form
+                        class="slideshow-action"
+                        method="post"
+                        action="{% url 'facility_image_move' image.id 'prev' %}"
+                      >
+                        {% csrf_token %}
+                        <button type="submit" aria-label="Move left">Move Left</button>
+                      </form>
+                      <form
+                        class="slideshow-action"
+                        method="post"
+                        action="{% url 'facility_image_move' image.id 'next' %}"
+                      >
+                        {% csrf_token %}
+                        <button type="submit" aria-label="Move right">Move Right</button>
+                      </form>
+                      <form
+                        class="slideshow-action"
+                        method="post"
+                        enctype="multipart/form-data"
+                        action="{% url 'facility_image_replace' image.id %}"
+                      >
+                        {% csrf_token %}
+                        <label class="slideshow-replace">
+                          Replace
+                          <input type="file" name="facility_image" accept="image/*" data-action="replace-facility" />
+                        </label>
+                      </form>
+                      <form
+                        class="slideshow-action"
+                        method="post"
+                        action="{% url 'facility_image_delete' image.id %}"
+                      >
+                        {% csrf_token %}
+                        <button type="submit" aria-label="Delete photo">Delete</button>
+                      </form>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+              <button
+                class="slideshow-control slideshow-control--next"
+                type="button"
+                data-action="next-slide"
+                aria-label="Next photo"
+              >
+                ›
+              </button>
+            {% else %}
+              <div class="facility-empty">
+                Add up to {{ facility_limit }} facility photos.
+              </div>
+            {% endif %}
+          </div>
+          {% if facility_remaining == 0 %}
+            <p class="facility-limit">Maximum {{ facility_limit }} photos reached.</p>
+          {% else %}
+            <p class="facility-limit">
+              You can upload {{ facility_remaining }} more photo{{ facility_remaining|pluralize }}.
+            </p>
+          {% endif %}
+        </section>
+        <button class="primary-button profile-save" type="submit" form="profile-update-form">
+          Save Changes
+        </button>
+        </section>
+      </div>
+    </main>
+    <script>
+      const pickProfileImage = document.querySelector('[data-action="pick-profile-image"]');
+      const profileImageInput = document.getElementById("profile-image-input");
+      const profileImageForm = document.getElementById("profile-image-form");
+      const slideshow = document.querySelector("[data-slideshow]");
+      const slidesTrack = document.querySelector("[data-slides]");
+      const prevSlide = document.querySelector('[data-action="prev-slide"]');
+      const nextSlide = document.querySelector('[data-action="next-slide"]');
+      const replaceInputs = document.querySelectorAll('[data-action="replace-facility"]');
+      let slideIndex = 0;
+
+      pickProfileImage?.addEventListener("click", () => {
+        profileImageInput?.click();
+      });
+
+      profileImageInput?.addEventListener("change", () => {
+        if (profileImageInput.files && profileImageInput.files.length > 0) {
+          profileImageForm?.submit();
+        }
+      });
+
+      const updateSlide = () => {
+        if (!slidesTrack) {
+          return;
+        }
+        const slides = slidesTrack.children.length;
+        if (slides === 0) {
+          return;
+        }
+        if (slideIndex < 0) {
+          slideIndex = slides - 1;
+        }
+        if (slideIndex >= slides) {
+          slideIndex = 0;
+        }
+        Array.from(slidesTrack.children).forEach((slide, index) => {
+          slide.classList.toggle("is-active", index === slideIndex);
+          slide.setAttribute("aria-hidden", index === slideIndex ? "false" : "true");
+        });
+      };
+
+      prevSlide?.addEventListener("click", () => {
+        slideIndex -= 1;
+        updateSlide();
+      });
+
+      nextSlide?.addEventListener("click", () => {
+        slideIndex += 1;
+        updateSlide();
+      });
+
+      replaceInputs.forEach((input) => {
+        input.addEventListener("change", () => {
+          if (input.files && input.files.length > 0) {
+            input.closest("form")?.submit();
+          }
+        });
+      });
+
+      if (slideshow && slidesTrack && slidesTrack.children.length > 0) {
+        updateSlide();
+      }
+
+      window.addEventListener("resize", updateSlide);
+    </script>
+  </body>
+</html>

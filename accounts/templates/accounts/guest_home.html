@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>StayFinder</title>
-    <link rel="stylesheet" href="{% static 'accounts/css/guest_home.css' %}" />
+    <link rel="stylesheet" href="{% static 'accounts/css/guest_home.css' %}?v=4" />
   </head>
   <body>
     <header class="topbar">
@@ -14,15 +14,61 @@
         <span class="brand__name">StayFinder</span>
       </div>
       <div class="topbar__actions">
-        <button class="icon-button" aria-label="Notifications">🔔</button>
-        <div class="user">
-          <span class="user__label">Guest Account</span>
-          <span class="user__name">Sarah Johnson</span>
-        </div>
-        <a class="signout-button" href="{% url 'login' %}">
-          <span class="signout-button__icon">⎋</span>
-          Sign Out
-        </a>
+        <button class="icon-button icon-button--notify" aria-label="Notifications">
+          <svg class="icon-button__svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M15 17H9m8-5V9a5 5 0 0 0-10 0v3l-1.6 2.4A1 1 0 0 0 6.2 16h11.6a1 1 0 0 0 .8-1.6L17 12Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.6"
+            />
+          </svg>
+          <span class="icon-button__dot" aria-hidden="true"></span>
+        </button>
+        <details class="profile-menu">
+          <summary class="profile-trigger">
+            <span class="profile-trigger__content">
+              <span class="profile-trigger__avatar">
+                {% if profile.profile_image %}
+                  <img src="{{ profile.profile_image.url }}" alt="Profile photo" />
+                {% elif profile.profile_image_url %}
+                  <img src="{{ profile.profile_image_url }}" alt="Profile photo" />
+                {% else %}
+                  <span class="profile-trigger__initial">{{ profile.full_name|slice:":1" }}</span>
+                {% endif %}
+              </span>
+              <span class="profile-trigger__text">
+                <span class="profile-trigger__name">
+                  {{ request.user.get_full_name|default:request.user.username }}
+                </span>
+              </span>
+              <span class="profile-trigger__chevron">▾</span>
+            </span>
+          </summary>
+          <div class="profile-dropdown" role="menu">
+            <a class="profile-item" href="{% url 'guest_profile' %}" role="menuitem">
+              <span class="profile-item__icon">👤</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Account Information</span>
+                <span class="profile-item__subtitle">View your profile details</span>
+              </span>
+            </a>
+            <a class="profile-item" href="{% url 'booking_history' %}" role="menuitem">
+              <span class="profile-item__icon">📅</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Booking History</span>
+                <span class="profile-item__subtitle">View all your bookings</span>
+              </span>
+            </a>
+            <div class="profile-divider"></div>
+            <a class="profile-item profile-item--danger" href="{% url 'logout' %}" role="menuitem">
+              <span class="profile-item__icon">↗</span>
+              <span class="profile-item__title">Sign Out</span>
+            </a>
+          </div>
+        </details>
       </div>
     </header>
 
@@ -33,85 +79,145 @@
       </div>
 
       <section class="search-card">
-        <form class="search-form" id="hotel-search-form">
+        <form class="search-form" id="hotel-search-form" method="get" action="{% url 'home' %}">
           <label class="field">
             <span>Location</span>
-            <input type="text" placeholder="City or hotel name" />
+            <input
+              type="text"
+              name="location"
+              placeholder="Enter city name"
+              value="{{ search_params.location }}"
+            />
           </label>
           <label class="field">
             <span>Check-in</span>
-            <input type="date" placeholder="mm/dd/yyyy" />
+            <input type="date" name="checkin" value="{{ search_params.checkin }}" />
           </label>
           <label class="field">
             <span>Check-out</span>
-            <input type="date" placeholder="mm/dd/yyyy" />
+            <input type="date" name="checkout" value="{{ search_params.checkout }}" />
           </label>
           <label class="field">
             <span>Guests</span>
-            <input type="number" value="2" min="1" />
+            <input
+              type="number"
+              name="guests"
+              value="{{ search_params.guests|default:2 }}"
+              min="1"
+            />
           </label>
           <button class="primary-button" type="submit">Search Hotels</button>
         </form>
       </section>
 
-      <section class="results" id="hotel-results" aria-live="polite">
+      <section
+        class="results {% if search_performed %}results--visible{% endif %}"
+        id="hotel-results"
+        aria-live="polite"
+      >
         <header class="results__header">
           <h2>Available Hotels</h2>
-          <p>Found 3 hotels matching your search</p>
-          <!-- change the number depending on results found -->
+          {% if search_performed %}
+            <p>Found {{ rooms|length }} room{{ rooms|length|pluralize }} matching your search</p>
+          {% else %}
+            <p>Search to see available rooms</p>
+          {% endif %}
         </header>
+        {% if search_error %}
+          <p>{{ search_error }}</p>
+        {% endif %}
 
-        <!-- This whole division need to change when we do crud -->
         <div class="results__grid">
-          <article class="hotel-card">
-            <div class="hotel-card__media">🏨</div>
-            <div class="hotel-card__body">
-              <h3>Grand Plaza Hotel</h3>
-              <p class="hotel-card__location">📍 New York</p>
-              <div class="hotel-card__meta">
-                <span class="hotel-card__rating">⭐ 4.8</span>
-                <span class="hotel-card__price">$299 <small>per night</small></span>
-              </div>
-              <button class="hotel-card__action" type="button">Book Now</button>
-            </div>
-          </article>
-
-          <article class="hotel-card">
-            <div class="hotel-card__media">🏖️</div>
-            <div class="hotel-card__body">
-              <h3>Seaside Resort</h3>
-              <p class="hotel-card__location">📍 Miami Beach</p>
-              <div class="hotel-card__meta">
-                <span class="hotel-card__rating">⭐ 4.6</span>
-                <span class="hotel-card__price">$249 <small>per night</small></span>
-              </div>
-              <button class="hotel-card__action" type="button">Book Now</button>
-            </div>
-          </article>
-
-          <article class="hotel-card">
-            <div class="hotel-card__media">🏔️</div>
-            <div class="hotel-card__body">
-              <h3>Mountain View Lodge</h3>
-              <p class="hotel-card__location">📍 Denver </p>
-              <div class="hotel-card__meta">
-                <span class="hotel-card__rating">⭐ 4.7</span>
-                <span class="hotel-card__price">$189 <small>per night</small></span>
-              </div>
-              <button class="hotel-card__action" type="button">Book Now</button>
-            </div>
-          </article>
+          {% if search_performed and rooms %}
+            {% for room in rooms %}
+              <article class="hotel-card">
+                <div class="hotel-card__media">
+                  {% with facility_images=room.hotel.facility_images.all %}
+                    {% if facility_images %}
+                      <div class="facility-slider" data-slider>
+                        <div class="facility-slider__track">
+                          {% for facility_image in facility_images %}
+                            <div class="facility-slider__slide{% if forloop.first %} is-active{% endif %}">
+                              <img
+                                src="{{ facility_image.image.url }}"
+                                alt="{{ room.hotel.full_name }} facility image {{ forloop.counter }}"
+                              />
+                            </div>
+                          {% endfor %}
+                        </div>
+                        {% if facility_images|length > 1 %}
+                          <button
+                            class="facility-slider__control facility-slider__control--prev"
+                            type="button"
+                            data-direction="prev"
+                            aria-label="Previous facility image"
+                          >
+                            ‹
+                          </button>
+                          <button
+                            class="facility-slider__control facility-slider__control--next"
+                            type="button"
+                            data-direction="next"
+                            aria-label="Next facility image"
+                          >
+                            ›
+                          </button>
+                        {% endif %}
+                      </div>
+                    {% else %}
+                      <span class="hotel-card__fallback">🏨</span>
+                    {% endif %}
+                  {% endwith %}
+                </div>
+                <div class="hotel-card__body">
+                  <h3>{{ room.hotel.full_name }}</h3>
+                  <p class="hotel-card__location">📍 {{ room.hotel.location|default:"Location unavailable" }}</p>
+                  <div class="hotel-card__meta">
+                    <span class="hotel-card__rating">{{ room.room_type.name }}</span>
+                    <span class="hotel-card__price">
+                      ${{ room.rate_per_night }} <small>per night</small>
+                    </span>
+                  </div>
+                  <p class="hotel-card__location">
+                    {{ room.capacity }} guests · {{ room.available_rooms }} rooms
+                  </p>
+                  <p class="hotel-card__location">
+                    {{ room.checkin_date }} to {{ room.checkout_date }}
+                  </p>
+                  <a class="hotel-card__action" href="{% url 'booking_checkout' room.id %}">Book Now</a>
+                </div>
+              </article>
+            {% endfor %}
+          {% elif search_performed %}
+            <p>No rooms match your search yet. Try adjusting your dates or guests.</p>
+          {% endif %}
         </div>
       </section>
     </main>
     <script>
-      const searchForm = document.getElementById("hotel-search-form");
-      const results = document.getElementById("hotel-results");
+      document.querySelectorAll("[data-slider]").forEach((slider) => {
+        const slides = Array.from(slider.querySelectorAll(".facility-slider__slide"));
+        if (slides.length < 2) {
+          return;
+        }
 
-      searchForm?.addEventListener("submit", (event) => {
-        event.preventDefault();
-        results?.classList.add("results--visible");
-        results?.scrollIntoView({ behavior: "smooth", block: "start" });
+        let activeIndex = 0;
+        const setActiveSlide = (index) => {
+          slides[activeIndex].classList.remove("is-active");
+          activeIndex = (index + slides.length) % slides.length;
+          slides[activeIndex].classList.add("is-active");
+        };
+
+        slider.querySelectorAll(".facility-slider__control").forEach((button) => {
+          button.addEventListener("click", () => {
+            const step = button.dataset.direction === "prev" ? -1 : 1;
+            setActiveSlide(activeIndex + step);
+          });
+        });
+
+        setInterval(() => {
+          setActiveSlide(activeIndex + 1);
+        }, 3500);
       });
     </script>
   </body>

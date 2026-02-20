@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, password_validation
 from django.core.exceptions import ValidationError
 
 from .models import Profile
@@ -8,13 +8,10 @@ User = get_user_model()
 
 
 class SignupForm(forms.Form):
-    ACCOUNT_TYPE_CHOICES = (
-        (Profile.AccountType.GUEST, "Guest"),
-        (Profile.AccountType.HOTEL, "Hotel"),
-    )
+    ACCOUNT_TYPE_CHOICES = Profile.AccountType.choices
 
     account_type = forms.ChoiceField(choices=ACCOUNT_TYPE_CHOICES)
-    full_name = forms.CharField(max_length=150)
+    username = forms.CharField(max_length=150)
     email = forms.EmailField()
     password = forms.CharField(widget=forms.PasswordInput)
     confirm_password = forms.CharField(widget=forms.PasswordInput)
@@ -24,6 +21,18 @@ class SignupForm(forms.Form):
         if User.objects.filter(email__iexact=email).exists():
             raise ValidationError("An account with this email already exists.")
         return email
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        if User.objects.filter(username__iexact=username).exists():
+            raise ValidationError("An account with this username already exists.")
+        return username
+
+    def clean_password(self):
+        password = self.cleaned_data.get("password")
+        if password:
+            password_validation.validate_password(password)
+        return password
 
     def clean(self):
         cleaned_data = super().clean()
@@ -35,14 +44,33 @@ class SignupForm(forms.Form):
 
 
 class LoginForm(forms.Form):
-    ACCOUNT_TYPE_CHOICES = (
-        (Profile.AccountType.GUEST, "Guest"),
-        (Profile.AccountType.HOTEL, "Hotel"),
-    )
-
-    account_type = forms.ChoiceField(choices=ACCOUNT_TYPE_CHOICES)
     email = forms.EmailField()
     password = forms.CharField(widget=forms.PasswordInput)
 
     def clean_email(self):
         return self.cleaned_data["email"].strip().lower()
+
+
+class ProfileImageForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ["profile_image"]
+
+
+class ProfileUpdateForm(forms.Form):
+    username = forms.CharField(max_length=150)
+    phone_number = forms.CharField(max_length=30, required=False)
+    location = forms.CharField(max_length=200, required=False)
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        if not username:
+            raise ValidationError("Username is required.")
+
+        if User.objects.filter(username__iexact=username).exclude(pk=self.user.pk).exists():
+            raise ValidationError("An account with this username already exists.")
+        return username

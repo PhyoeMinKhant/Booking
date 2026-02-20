@@ -1,0 +1,126 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hotel Bookings</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/hotel-home.css' %}?v=20260219a" />
+    <link rel="stylesheet" href="{% static 'bookings/css/hotel_history.css' %}?v=20260219a" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__icon">🏨</span>
+        <span class="brand__name">StayFinder</span>
+      </div>
+      <div class="topbar__actions">
+        <button class="icon-button icon-button--notify" aria-label="Notifications">
+          <svg class="icon-button__svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M15 17H9m8-5V9a5 5 0 0 0-10 0v3l-1.6 2.4A1 1 0 0 0 6.2 16h11.6a1 1 0 0 0 .8-1.6L17 12Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.6"
+            />
+          </svg>
+          <span class="icon-button__dot" aria-hidden="true"></span>
+        </button>
+        <details class="profile-menu">
+          <summary class="profile-trigger">
+            <span class="profile-trigger__content">
+              <span class="profile-trigger__avatar">
+                {% if profile.profile_image %}
+                  <img src="{{ profile.profile_image.url }}" alt="Profile photo" />
+                {% elif profile.profile_image_url %}
+                  <img src="{{ profile.profile_image_url }}" alt="Profile photo" />
+                {% else %}
+                  <span class="profile-trigger__initial">{{ profile.full_name|slice:":1" }}</span>
+                {% endif %}
+              </span>
+              <span class="profile-trigger__text">
+                <span class="profile-trigger__name">{{ profile.full_name }}</span>
+              </span>
+              <span class="profile-trigger__chevron">▾</span>
+            </span>
+          </summary>
+          <div class="profile-dropdown" role="menu">
+            <a class="profile-item" href="{% url 'hotel_profile' %}" role="menuitem">
+              <span class="profile-item__icon">🏨</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Account Information</span>
+                <span class="profile-item__subtitle">View hotel profile details</span>
+              </span>
+            </a>
+            <a class="profile-item" href="{% url 'hotel_booking_history' %}" role="menuitem">
+              <span class="profile-item__icon">📅</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Booking History</span>
+                <span class="profile-item__subtitle">View recent reservations</span>
+              </span>
+            </a>
+            <div class="profile-divider"></div>
+            <a class="profile-item profile-item--danger" href="{% url 'logout' %}" role="menuitem">
+              <span class="profile-item__icon">↗</span>
+              <span class="profile-item__title">Sign Out</span>
+            </a>
+          </div>
+        </details>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="page__content">
+        <nav class="top-links" aria-label="Hotel navigation">
+          <a class="top-links__item" href="{% url 'hotel_home' %}">Room Management</a>
+          <a class="top-links__item is-active" href="{% url 'hotel_booking_history' %}">Hotel Bookings</a>
+        </nav>
+
+        <header class="page-header">
+          <h1>Hotel Bookings</h1>
+          <p>Track reservations for your listed rooms</p>
+        </header>
+
+        <section class="filters" aria-label="Booking status filters">
+          {% for tab in state_tabs %}
+            <a class="filter-chip{% if tab.is_active %} is-active{% endif %}" href="{% url 'hotel_booking_history' %}?state={{ tab.code }}">
+              {{ tab.label }} ({{ tab.count }})
+            </a>
+          {% endfor %}
+        </section>
+
+        <section class="bookings-panel" aria-live="polite">
+          {% if bookings %}
+            <div class="bookings-list">
+              {% for booking in bookings %}
+                <article class="booking-card">
+                  <div class="booking-card__top">
+                    <div>
+                      <h2>{{ booking.room.room_type.name }} · {{ booking.room.capacity }} guests</h2>
+                      <p>Guest: {{ booking.guest_name }}</p>
+                    </div>
+                    <span class="status-badge status-{{ booking.computed_state }}">{{ booking.computed_state_label }}</span>
+                  </div>
+                  <div class="booking-meta">
+                    <span>Check-in: {{ booking.room.checkin_date }}</span>
+                    <span>Check-out: {{ booking.room.checkout_date }}</span>
+                    <span>Booked on: {{ booking.created_at|date:"M j, Y" }}</span>
+                    <span>Payment: {{ booking.get_payment_option_display }}</span>
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty-state">
+              <div class="empty-state__icon">📅</div>
+              <h2>No bookings found</h2>
+              <p>No reservations match this filter yet.</p>
+            </div>
+          {% endif %}
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

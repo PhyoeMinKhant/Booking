@@ -183,6 +183,13 @@ p {
   font-weight: 600;
 }
 
+.helper {
+  margin: -4px 0 4px;
+  font-size: 13px;
+  text-align: right;
+  color: var(--muted);
+}
+
 .footer {
   text-align: center;
   font-size: 13px;

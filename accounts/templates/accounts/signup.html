@@ -60,12 +60,12 @@
           {% endwith %}
 
           <label class="field">
-            <span>Full Name</span>
+            <span>Username</span>
             <input
               type="text"
-              name="full_name"
-              placeholder="John Doe"
-              value="{{ form.data.full_name|default_if_none:'' }}"
+              name="username"
+              placeholder="john.doe"
+              value="{{ form.data.username|default_if_none:'' }}"
               required
             />
           </label>

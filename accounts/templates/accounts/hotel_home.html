@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hotel Dashboard</title>
-    <link rel="stylesheet" href="{% static 'accounts/css/hotel-home.css' %}" />
+    <link rel="stylesheet" href="{% static 'accounts/css/hotel-home.css' %}?v=20260219a" />
   </head>
   <body>
     <header class="topbar">
@@ -14,71 +14,253 @@
         <span class="brand__name">StayFinder</span>
       </div>
       <div class="topbar__actions">
-        <button class="icon-button" aria-label="Notifications">🔔</button>
-        <div class="user">
-          <span class="user__label">Hotel Account</span>
-          <span class="user__name">Grand Plaza Hotel</span>
-        </div>
-        <a class="signout-button" href="{% url 'login' %}">
-          <span class="signout-button__icon">⎋</span>
-          Sign Out
-        </a>
+        <button class="icon-button icon-button--notify" aria-label="Notifications">
+          <svg class="icon-button__svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M15 17H9m8-5V9a5 5 0 0 0-10 0v3l-1.6 2.4A1 1 0 0 0 6.2 16h11.6a1 1 0 0 0 .8-1.6L17 12Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.6"
+            />
+          </svg>
+          <span class="icon-button__dot" aria-hidden="true"></span>
+        </button>
+        <details class="profile-menu">
+          <summary class="profile-trigger">
+            <span class="profile-trigger__content">
+              <span class="profile-trigger__avatar">
+                {% if profile.profile_image %}
+                  <img src="{{ profile.profile_image.url }}" alt="Profile photo" />
+                {% elif profile.profile_image_url %}
+                  <img src="{{ profile.profile_image_url }}" alt="Profile photo" />
+                {% else %}
+                  <span class="profile-trigger__initial">{{ profile.full_name|slice:":1" }}</span>
+                {% endif %}
+              </span>
+              <span class="profile-trigger__text">
+                <span class="profile-trigger__name">{{ profile.full_name }}</span>
+              </span>
+              <span class="profile-trigger__chevron">▾</span>
+            </span>
+          </summary>
+          <div class="profile-dropdown" role="menu">
+            <a class="profile-item" href="{% url 'hotel_profile' %}" role="menuitem">
+              <span class="profile-item__icon">🏨</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Account Information</span>
+                <span class="profile-item__subtitle">View hotel profile details</span>
+              </span>
+            </a>
+            <a class="profile-item" href="{% url 'hotel_booking_history' %}" role="menuitem">
+              <span class="profile-item__icon">📅</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Booking History</span>
+                <span class="profile-item__subtitle">View recent reservations</span>
+              </span>
+            </a>
+            <div class="profile-divider"></div>
+            <a class="profile-item profile-item--danger" href="{% url 'logout' %}" role="menuitem">
+              <span class="profile-item__icon">↗</span>
+              <span class="profile-item__title">Sign Out</span>
+            </a>
+          </div>
+        </details>
       </div>
     </header>
 
     <main class="page">
-      <section class="page__header">
-        <div>
-          <h1>Room Management</h1>
-          <p>Manage room types, availability, and pricing.</p>
-        </div>
-        <button class="primary-button" type="button">Add New Room</button>
-      </section>
-
-      <section class="card">
-        <div class="table">
-          <div class="table__row table__row--head">
-            <div>Room Type</div>
-            <div>Capacity</div>
-            <div>Rate/Night</div>
-            <div>Available</div>
-            <div>Actions</div>
+      <nav class="top-links" aria-label="Hotel navigation">
+        <a class="top-links__item is-active" href="{% url 'hotel_home' %}">Room Management</a>
+        <a class="top-links__item" href="{% url 'hotel_booking_history' %}">Hotel Bookings</a>
+      </nav>
+      <section class="room-cards">
+        <header class="room-cards__header">
+          <div>
+            <h2>Latest Rooms</h2>
+            <p>Rooms created from your listings appear here.</p>
           </div>
-
-          <div class="table__row">
-            <div class="room">
-              <div class="room__title">Deluxe Suite</div>
-              <span class="room__meta">King bed · City view</span>
-            </div>
-            <div>4 guests</div>
-            <div class="rate">$299</div>
-            <div><span class="pill pill--warning">5 rooms</span></div>
-            <div><button class="ghost-button" type="button">Edit</button></div>
-          </div>
-
-          <div class="table__row">
-            <div class="room">
-              <div class="room__title">Standard Room</div>
-              <span class="room__meta">Queen bed · Wi‑Fi</span>
-            </div>
-            <div>2 guests</div>
-            <div class="rate">$149</div>
-            <div><span class="pill pill--success">12 rooms</span></div>
-            <div><button class="ghost-button" type="button">Edit</button></div>
-          </div>
-
-          <div class="table__row">
-            <div class="room">
-              <div class="room__title">Executive Suite</div>
-              <span class="room__meta">Suite · Lounge access</span>
-            </div>
-            <div>3 guests</div>
-            <div class="rate">$249</div>
-            <div><span class="pill pill--warning">3 rooms</span></div>
-            <div><button class="ghost-button" type="button">Edit</button></div>
-          </div>
+          <button class="primary-button" type="button" data-action="open-room-modal">
+            Add New Room
+          </button>
+        </header>
+        <div class="room-cards__grid">
+          {% for room in rooms %}
+            <article
+              class="room-card"
+              data-room-id="{{ room.id }}"
+              data-room-type-id="{{ room.room_type.id }}"
+              data-capacity="{{ room.capacity }}"
+              data-rate="{{ room.rate_per_night }}"
+              data-available="{{ room.available_rooms }}"
+              data-checkin="{{ room.checkin_date|date:"Y-m-d" }}"
+              data-checkout="{{ room.checkout_date|date:"Y-m-d" }}"
+            >
+              <div class="room-card__title">{{ room.room_type.name }}</div>
+              <div class="room-card__meta">
+                <span>{{ room.capacity }} guests</span>
+                <span>${{ room.rate_per_night }}</span>
+              </div>
+              <div class="room-card__meta">
+                <span>{{ room.available_rooms }} available</span>
+                <span>{{ room.checkin_date }} → {{ room.checkout_date }}</span>
+              </div>
+              <div class="room-card__footer">
+                <button class="room-card__edit" type="button" data-action="edit-room">
+                  Edit Room
+                </button>
+              </div>
+            </article>
+          {% empty %}
+            <div class="room-cards__empty">No rooms yet. Add your first room.</div>
+          {% endfor %}
         </div>
       </section>
     </main>
+    <div class="modal" id="room-modal" hidden>
+      <div class="modal__backdrop" data-action="close-room-modal"></div>
+      <div class="modal__content" role="dialog" aria-modal="true">
+        <header class="modal__header">
+          <h2>Add New Room</h2>
+          <button class="icon-button" type="button" data-action="close-room-modal">✕</button>
+        </header>
+        <form class="modal__form" method="post" action="{% url 'hotel_home' %}">
+          {% csrf_token %}
+          <input type="hidden" name="room_id" value="" />
+          <div class="modal__grid">
+            <label class="field">
+              <span>Room Type</span>
+              <select name="room_type" required>
+                <option value="" disabled selected>Select room type</option>
+                {% for option in room_form.fields.room_type.queryset %}
+                  <option value="{{ option.id }}">{{ option.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="field">
+              <span>Capacity</span>
+              <input type="number" name="capacity" min="1" required />
+            </label>
+            <label class="field">
+              <span>Rate per Night</span>
+              <input type="number" name="rate_per_night" step="0.01" min="0" required />
+            </label>
+            <label class="field">
+              <span>Available Rooms</span>
+              <input type="number" name="available_rooms" min="0" required />
+            </label>
+            <label class="field">
+              <span>Check-in Date</span>
+              <input type="date" name="checkin_date" required />
+            </label>
+            <label class="field">
+              <span>Check-out Date</span>
+              <input type="date" name="checkout_date" required />
+            </label>
+          </div>
+          <div class="modal__actions">
+            <button class="ghost-button" type="button" data-action="close-room-modal">
+              Cancel
+            </button>
+            <button class="primary-button" type="submit">Save Room</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script>
+      const modal = document.getElementById("room-modal");
+      const openModal = document.querySelector('[data-action="open-room-modal"]');
+      const closeModalButtons = document.querySelectorAll('[data-action="close-room-modal"]');
+      const editButtons = document.querySelectorAll('[data-action="edit-room"]');
+      const modalTitle = document.querySelector(".modal__header h2");
+      const modalSubmit = document.querySelector(".modal__actions .primary-button");
+      const modalForm = document.querySelector(".modal__form");
+      const roomIdInput = document.querySelector('input[name="room_id"]');
+      const roomTypeInput = document.querySelector('select[name="room_type"]');
+      const capacityInput = document.querySelector('input[name="capacity"]');
+      const rateInput = document.querySelector('input[name="rate_per_night"]');
+      const availableInput = document.querySelector('input[name="available_rooms"]');
+      const checkinInput = document.querySelector('input[name="checkin_date"]');
+      const checkoutInput = document.querySelector('input[name="checkout_date"]');
+
+      const toggleModal = (show) => {
+        if (!modal) {
+          return;
+        }
+        if (show) {
+          modal.removeAttribute("hidden");
+          return;
+        }
+        modal.setAttribute("hidden", "");
+      };
+
+      const openForCreate = () => {
+        modalForm?.reset();
+        if (roomIdInput) {
+          roomIdInput.value = "";
+        }
+        if (modalTitle) {
+          modalTitle.textContent = "Add New Room";
+        }
+        if (modalSubmit) {
+          modalSubmit.textContent = "Save Room";
+        }
+        toggleModal(true);
+      };
+
+      const openForEdit = (card) => {
+        if (!card) {
+          return;
+        }
+
+        if (roomIdInput) {
+          roomIdInput.value = card.dataset.roomId || "";
+        }
+        if (roomTypeInput) {
+          roomTypeInput.value = card.dataset.roomTypeId || "";
+        }
+        if (capacityInput) {
+          capacityInput.value = card.dataset.capacity || "";
+        }
+        if (rateInput) {
+          rateInput.value = card.dataset.rate || "";
+        }
+        if (availableInput) {
+          availableInput.value = card.dataset.available || "";
+        }
+        if (checkinInput) {
+          checkinInput.value = card.dataset.checkin || "";
+        }
+        if (checkoutInput) {
+          checkoutInput.value = card.dataset.checkout || "";
+        }
+        if (modalTitle) {
+          modalTitle.textContent = "Edit Room";
+        }
+        if (modalSubmit) {
+          modalSubmit.textContent = "Update Room";
+        }
+        toggleModal(true);
+      };
+
+      openModal?.addEventListener("click", openForCreate);
+
+      editButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          openForEdit(button.closest(".room-card"));
+        });
+      });
+
+      closeModalButtons.forEach((button) => {
+        button.addEventListener("click", () => toggleModal(false));
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          toggleModal(false);
+        }
+      });
+    </script>
   </body>
 </html>
