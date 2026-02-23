@@ -94,6 +94,35 @@ body {
   padding: 14px;
 }
 
+.booking-card:target {
+  animation: booking-target-flash 0.9s ease-out 1;
+}
+
+@keyframes booking-target-flash {
+  0% {
+    background-color: rgba(219, 234, 254, 0.9);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+  }
+  70% {
+    background-color: rgba(219, 234, 254, 0.2);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.booking-card {
+  scroll-margin-top: 90px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .booking-card:target {
+    animation: none;
+  }
+}
+
 .booking-card__top {
   display: flex;
   justify-content: space-between;
@@ -119,6 +148,40 @@ body {
   gap: 8px 14px;
   color: #374151;
   font-size: 14px;
+}
+
+.booking-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+button.cancel-btn {
+  appearance: none;
+  border: 1px solid #fca5a5;
+  background: #fff1f2;
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+button.cancel-btn:hover {
+  background: #ffe4e6;
+  border-color: #f87171;
+}
+
+button.cancel-btn:active {
+  transform: translateY(1px);
+}
+
+button.cancel-btn:focus-visible {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
 }
 
 .status-badge {

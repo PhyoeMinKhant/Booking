@@ -197,25 +197,6 @@ p {
   margin: 0;
 }
 
-.demo {
-  margin-top: 8px;
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.demo__title {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-.demo p {
-  margin: 4px 0 0;
-}
-
 @media (max-width: 800px) {
   body {
     padding: 20px;

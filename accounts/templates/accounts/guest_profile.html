@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Guest Profile</title>
-    <link rel="stylesheet" href="{% static 'accounts/css/guest_profile.css' %}?v=20260211b" />
+    <link rel="stylesheet" href="{% static 'accounts/css/guest_profile.css' %}?v=20260223a" />
   </head>
   <body>
     <header class="topbar">
@@ -14,19 +14,7 @@
         <span class="brand__name">StayFinder</span>
       </div>
       <div class="topbar__actions">
-        <button class="icon-button icon-button--notify" aria-label="Notifications">
-          <svg class="icon-button__svg" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M15 17H9m8-5V9a5 5 0 0 0-10 0v3l-1.6 2.4A1 1 0 0 0 6.2 16h11.6a1 1 0 0 0 .8-1.6L17 12Z"
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.6"
-            />
-          </svg>
-          <span class="icon-button__dot" aria-hidden="true"></span>
-        </button>
+        {% include 'accounts/partials/notifications_menu.html' %}
         <details class="profile-menu">
           <summary class="profile-trigger">
             <span class="profile-trigger__content">
@@ -87,10 +75,6 @@
             <a class="sidebar-link" href="{% url 'booking_history' %}">
               <span class="sidebar-link__icon">📅</span>
               <span>Booking History</span>
-            </a>
-            <a class="sidebar-link" href="#">
-              <span class="sidebar-link__icon">❤</span>
-              <span>Favorite Hotels</span>
             </a>
             <a class="sidebar-link sidebar-link--danger" href="{% url 'logout' %}">
               <span class="sidebar-link__icon">↗</span>

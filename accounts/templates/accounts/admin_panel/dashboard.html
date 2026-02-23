@@ -1,0 +1,25 @@
+{% extends 'accounts/admin_panel/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+  <header class="page-header">
+    <h2>Dashboard</h2>
+    <p>Overview of platform data</p>
+  </header>
+
+  <section class="stats-grid">
+    <article class="stat-card">
+      <h3>Bookings</h3>
+      <p>{{ bookings_count }}</p>
+    </article>
+    <article class="stat-card">
+      <h3>Rooms</h3>
+      <p>{{ rooms_count }}</p>
+    </article>
+    <article class="stat-card">
+      <h3>Accounts</h3>
+      <p>{{ accounts_count }}</p>
+    </article>
+  </section>
+{% endblock %}

@@ -8,7 +8,10 @@ User = get_user_model()
 
 
 class SignupForm(forms.Form):
-    ACCOUNT_TYPE_CHOICES = Profile.AccountType.choices
+    ACCOUNT_TYPE_CHOICES = [
+        (Profile.AccountType.GUEST, "Guest"),
+        (Profile.AccountType.HOTEL, "Hotel"),
+    ]
 
     account_type = forms.ChoiceField(choices=ACCOUNT_TYPE_CHOICES)
     username = forms.CharField(max_length=150)
@@ -61,6 +64,7 @@ class ProfileUpdateForm(forms.Form):
     username = forms.CharField(max_length=150)
     phone_number = forms.CharField(max_length=30, required=False)
     location = forms.CharField(max_length=200, required=False)
+    description = forms.CharField(max_length=2000, required=False)
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)

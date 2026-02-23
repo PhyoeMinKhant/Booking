@@ -1,0 +1,45 @@
+<details class="notification-menu">
+  <summary class="icon-button icon-button--notify" aria-label="Notifications">
+    <svg class="icon-button__svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M15 17H9m8-5V9a5 5 0 0 0-10 0v3l-1.6 2.4A1 1 0 0 0 6.2 16h11.6a1 1 0 0 0 .8-1.6L17 12Z"
+        fill="none"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.6"
+      />
+    </svg>
+    {% if booking_notifications_unread_count > 0 %}
+      <span class="icon-button__dot" aria-hidden="true"></span>
+    {% endif %}
+  </summary>
+  <div class="notification-dropdown" role="menu">
+    <p class="notification-title">Notifications</p>
+    <ul class="notification-list">
+      {% for notification in booking_notifications %}
+        <li class="notification-item">
+          <a class="notification-item__link" href="{{ notification.history_url }}">
+            <span class="notification-item__text">{{ notification.message }}</span>
+            <span class="notification-item__time">{{ notification.created_at|date:"M j, g:i A" }}</span>
+          </a>
+        </li>
+      {% empty %}
+        <li class="notification-empty">No notifications yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</details>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".notification-menu .notification-item__link").forEach(function (link) {
+      link.addEventListener("click", function () {
+        var menu = this.closest(".notification-menu");
+        if (menu) {
+          menu.removeAttribute("open");
+        }
+      });
+    });
+  });
+</script>

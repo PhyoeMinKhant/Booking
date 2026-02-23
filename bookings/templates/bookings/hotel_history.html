@@ -5,8 +5,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hotel Bookings</title>
-    <link rel="stylesheet" href="{% static 'accounts/css/hotel-home.css' %}?v=20260219a" />
-    <link rel="stylesheet" href="{% static 'bookings/css/hotel_history.css' %}?v=20260219a" />
+    <link rel="stylesheet" href="{% static 'accounts/css/hotel-home.css' %}?v=20260223a" />
+    <link rel="stylesheet" href="{% static 'bookings/css/hotel_history.css' %}?v=20260223a" />
   </head>
   <body>
     <header class="topbar">
@@ -15,19 +15,7 @@
         <span class="brand__name">StayFinder</span>
       </div>
       <div class="topbar__actions">
-        <button class="icon-button icon-button--notify" aria-label="Notifications">
-          <svg class="icon-button__svg" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M15 17H9m8-5V9a5 5 0 0 0-10 0v3l-1.6 2.4A1 1 0 0 0 6.2 16h11.6a1 1 0 0 0 .8-1.6L17 12Z"
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.6"
-            />
-          </svg>
-          <span class="icon-button__dot" aria-hidden="true"></span>
-        </button>
+        {% include 'accounts/partials/notifications_menu.html' %}
         <details class="profile-menu">
           <summary class="profile-trigger">
             <span class="profile-trigger__content">
@@ -95,7 +83,7 @@
           {% if bookings %}
             <div class="bookings-list">
               {% for booking in bookings %}
-                <article class="booking-card">
+                <article class="booking-card" id="booking-{{ booking.id }}">
                   <div class="booking-card__top">
                     <div>
                       <h2>{{ booking.room.room_type.name }} · {{ booking.room.capacity }} guests</h2>
@@ -106,9 +94,21 @@
                   <div class="booking-meta">
                     <span>Check-in: {{ booking.room.checkin_date }}</span>
                     <span>Check-out: {{ booking.room.checkout_date }}</span>
-                    <span>Booked on: {{ booking.created_at|date:"M j, Y" }}</span>
+                    <span>Rooms booked: {{ booking.rooms_count }}</span>
+                    <span>Booked on: {{ booking.created_at|date:"M j, Y" }} at {{ booking.created_at|date:"g:i A" }}</span>
                     <span>Payment: {{ booking.get_payment_option_display }}</span>
+                    {% if booking.payment_option == 'pay_later' and booking.computed_state == 'pending' %}
+                      <span>Payment due by: {{ booking.payment_expires_at|date:"M j, Y" }} at {{ booking.payment_expires_at|date:"g:i A" }}</span>
+                    {% elif booking.payment_option == 'pay_later' and booking.computed_state == 'expired' %}
+                      <span>Expired at: {{ booking.payment_expires_at|date:"M j, Y" }} at {{ booking.payment_expires_at|date:"g:i A" }}</span>
+                    {% endif %}
                   </div>
+                  {% if booking.computed_state == 'pending' %}
+                    <form class="booking-actions" method="post" action="{% url 'hotel_booking_cancel' booking.id %}">
+                      {% csrf_token %}
+                      <button class="cancel-btn" type="submit">Cancel booking</button>
+                    </form>
+                  {% endif %}
                 </article>
               {% endfor %}
             </div>

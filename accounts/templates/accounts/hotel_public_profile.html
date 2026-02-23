@@ -1,0 +1,113 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ hotel.full_name }} · Hotel Profile</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/guest_hotel_profile.css' %}?v=20260223a" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__icon">🏨</span>
+        <span class="brand__name">StayFinder</span>
+      </div>
+      <a class="back-link" href="{% url 'home' %}">← Back to search</a>
+    </header>
+
+    <main class="page">
+      <section class="hero-card">
+        <div class="hero-card__header">
+          <h1>{{ hotel.full_name }}</h1>
+          <p>📍 {{ hotel.location|default:"Location unavailable" }}</p>
+        </div>
+        {% if facility_images %}
+          <div class="facility-grid">
+            {% for image in facility_images %}
+              <img src="{{ image.image.url }}" alt="{{ hotel.full_name }} facility image {{ forloop.counter }}" />
+            {% endfor %}
+          </div>
+        {% endif %}
+      </section>
+
+      <section class="details-grid">
+        <article class="card">
+          <h2>Description</h2>
+          <p class="description">{{ hotel.description|default:"No description provided yet." }}</p>
+        </article>
+
+        <article class="card">
+          <h2>Ratings</h2>
+          {% if avg_rating %}
+            <p class="rating">⭐ {{ avg_rating }}/5</p>
+            <p class="muted">Based on {{ review_count }} review{{ review_count|pluralize }}</p>
+          {% else %}
+            <p class="muted">No ratings yet.</p>
+          {% endif %}
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>Listed Rooms</h2>
+        <div class="rooms-grid">
+          {% for room in listed_rooms %}
+            <article class="room-item">
+              <h3>{{ room.room_type.name }}</h3>
+              <p>{{ room.capacity }} guests · {{ room.available_rooms }} available room{{ room.available_rooms|pluralize }}</p>
+              <p>${{ room.rate_per_night }} per night</p>
+              <p>{{ room.checkin_date }} to {{ room.checkout_date }}</p>
+              <a class="book-button" href="{% url 'booking_checkout' room.id %}">Book Now</a>
+            </article>
+          {% empty %}
+            <p class="muted">No available rooms listed right now.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Reviews</h2>
+        <div class="review-form-wrap">
+          {% if can_submit_review %}
+            <form method="post" action="{% url 'guest_hotel_profile' hotel.id %}">
+              {% csrf_token %}
+              <div class="review-field">
+                <label for="{{ review_form.rating.id_for_label }}">Rating</label>
+                {{ review_form.rating }}
+              </div>
+              <div class="review-field">
+                <label for="{{ review_form.comment.id_for_label }}">Review</label>
+                {{ review_form.comment }}
+              </div>
+              {% if review_form.errors %}
+                <p class="error-text">Please provide both rating and review.</p>
+              {% endif %}
+              <button class="book-button" type="submit">Submit Review</button>
+            </form>
+          {% elif existing_review %}
+            <p class="muted">You have already reviewed this hotel.</p>
+          {% else %}
+            <p class="muted">Leave a review after you have a confirmed or completed booking.</p>
+          {% endif %}
+          {% if review_error %}
+            <p class="error-text">{{ review_error }}</p>
+          {% endif %}
+        </div>
+        <div class="reviews-list">
+          {% for review in reviews %}
+            <article class="review-item">
+              <div class="review-item__top">
+                <strong>{{ review.booking.guest.full_name }}</strong>
+                <span>⭐ {{ review.rating }}/5</span>
+              </div>
+              <p>{{ review.comment }}</p>
+              <small>{{ review.created_at|date:"M d, Y" }}</small>
+            </article>
+          {% empty %}
+            <p class="muted">No reviews yet.</p>
+          {% endfor %}
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

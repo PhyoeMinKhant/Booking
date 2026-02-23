@@ -1,0 +1,52 @@
+{% extends 'accounts/admin_panel/base.html' %}
+
+{% block title %}Rooms{% endblock %}
+
+{% block content %}
+  <header class="page-header page-header--row">
+    <div>
+      <h2>Rooms</h2>
+      <p>Read, create, update and delete room data</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'panel_room_create' %}">New Room</a>
+  </header>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Hotel</th>
+          <th>Type</th>
+          <th>Capacity</th>
+          <th>Rate</th>
+          <th>Available</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for room in rooms %}
+          <tr>
+            <td>{{ room.id }}</td>
+            <td>{{ room.hotel.full_name }}</td>
+            <td>{{ room.room_type.name }}</td>
+            <td>{{ room.capacity }}</td>
+            <td>${{ room.rate_per_night }}</td>
+            <td>{{ room.available_rooms }}</td>
+            <td class="actions-cell">
+              <a class="btn btn-small" href="{% url 'panel_room_edit' room.id %}">Edit</a>
+              <form method="post" action="{% url 'panel_room_delete' room.id %}">
+                {% csrf_token %}
+                <button class="btn btn-small btn-danger" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7">No rooms found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'accounts/admin_panel/base.html' %}
+
+{% block title %}{% if mode == 'create' %}New Account{% else %}Edit Account{% endif %}{% endblock %}
+
+{% block content %}
+  <header class="page-header">
+    <h2>{% if mode == 'create' %}Create Account{% else %}Edit Account #{{ target_user.id }}{% endif %}</h2>
+  </header>
+
+  <form method="post" class="form-card">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <label class="field">
+        <span>{{ field.label }}</span>
+        {{ field }}
+        {{ field.errors }}
+      </label>
+    {% endfor %}
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a class="btn" href="{% url 'panel_accounts' %}">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

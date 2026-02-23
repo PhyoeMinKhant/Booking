@@ -139,6 +139,13 @@
             </label>
 
             <label>
+              Number of Rooms
+              {{ form.rooms_count }}
+              {{ form.rooms_count.errors }}
+              <p class="hint">Maximum you can book now: {{ room.available_rooms }} room{{ room.available_rooms|pluralize }}.</p>
+            </label>
+
+            <label>
               Payment Option
               {{ form.payment_option }}
               {{ form.payment_option.errors }}

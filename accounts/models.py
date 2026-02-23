@@ -7,6 +7,7 @@ class Profile(models.Model):
     class AccountType(models.TextChoices):
         GUEST = "guest", "Guest"
         HOTEL = "hotel", "Hotel"
+        ADMIN = "admin", "Admin"
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
@@ -17,6 +18,7 @@ class Profile(models.Model):
     )
     phone_number = models.CharField(max_length=30, blank=True, default="")
     location = models.CharField(max_length=200, blank=True, default="")
+    description = models.TextField(blank=True, default="")
     profile_image_url = models.URLField(blank=True, default="")
     profile_image = models.ImageField(
         upload_to="profiles/",
