@@ -15,5 +15,15 @@ urlpatterns = [
     path("accounts/", views.panel_accounts_view, name="panel_accounts"),
     path("accounts/new/", views.panel_account_create_view, name="panel_account_create"),
     path("accounts/<int:user_id>/edit/", views.panel_account_edit_view, name="panel_account_edit"),
+    path(
+        "accounts/<int:user_id>/approve-hotel/",
+        views.panel_account_approve_hotel_view,
+        name="panel_account_approve_hotel",
+    ),
+    path(
+        "accounts/<int:user_id>/reject-hotel/",
+        views.panel_account_reject_hotel_view,
+        name="panel_account_reject_hotel",
+    ),
     path("accounts/<int:user_id>/delete/", views.panel_account_delete_view, name="panel_account_delete"),
 ]

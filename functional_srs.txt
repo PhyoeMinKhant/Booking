@@ -1,0 +1,440 @@
+Functional Software Requirements Specification (SRS)
+Project: Booking (Django Web Application)
+Document Type: Functional SRS
+Version: 1.0
+Date: 2026-02-25
+
+==================================================
+1. Purpose
+==================================================
+This document defines the functional requirements for the current state of the Booking project. It describes implemented user-facing and admin-facing behavior based on the existing codebase.
+
+==================================================
+2. Scope
+==================================================
+The system is a role-based hotel booking platform with:
+- Guest account registration/login and profile management
+- Hotel account registration with admin verification workflow
+- Hotel room listing/management
+- Guest room search and booking checkout
+- Booking lifecycle management (pending, confirmed, completed, canceled, expired)
+- Booking review and rating flows
+- In-app booking notifications
+- Custom admin panel for CRUD operations on rooms, bookings, and accounts
+
+Out of scope in current implementation:
+- Real payment gateway integration (a mock digital payment screen exists)
+- External notification channels (email/SMS/push for booking events)
+- Multi-currency, taxes, discounts, coupons
+- API endpoints (system is currently template/view based)
+
+==================================================
+3. Stakeholders and User Roles
+==================================================
+3.1 Guest
+- Can register/login as guest.
+- Can search room availability.
+- Can create and manage own bookings.
+- Can review hotels after confirmed/completed stays.
+
+3.2 Hotel
+- Can register as hotel and upload hotel license image.
+- Requires admin approval before active access.
+- Can manage own rooms and hotel profile details.
+- Can monitor bookings for own hotel.
+- Can view/filter guest reviews.
+
+3.3 Admin (Staff/Superuser)
+- Accesses custom admin panel routes.
+- Can approve/reject hotel registrations.
+- Can perform CRUD for rooms, bookings, and user accounts.
+- Can view high-level dashboard counts.
+
+==================================================
+4. System Context and Navigation
+==================================================
+- Entry URLs:
+  - /accounts/ (login and account flows)
+  - /bookings/ (booking operations)
+  - /admin/ (custom admin panel)
+  - /django-admin/ (default Django admin)
+- Authentication and authorization are enforced with role-based redirects.
+- Profiles are associated 1:1 with Django users and are auto-created when needed.
+
+==================================================
+5. Functional Requirements
+==================================================
+
+5.1 Authentication and Account Management
+FR-AUTH-001
+The system shall support account signup with account types: guest and hotel.
+
+FR-AUTH-002
+The system shall enforce unique username and unique email (case-insensitive checks).
+
+FR-AUTH-003
+The system shall validate password strength using Django password validators.
+
+FR-AUTH-004
+The system shall require password confirmation during signup and reject mismatch.
+
+FR-AUTH-005
+The system shall require a hotel license image when account type is hotel.
+
+FR-AUTH-006
+When a guest account is created, the system shall log the user in and redirect to guest home.
+
+FR-AUTH-007
+When a hotel account is created, the system shall set user as inactive, set profile verification to pending, and redirect to hotel signup pending page.
+
+FR-AUTH-008
+The system shall allow login using email + password (email maps to username auth internally).
+
+FR-AUTH-009
+If a hotel account is inactive and pending, login shall show pending-review message.
+
+FR-AUTH-010
+If a hotel account is inactive and rejected, login shall show rejection message.
+
+FR-AUTH-011
+The system shall provide logout and clear the current session.
+
+FR-AUTH-012
+The system shall support password reset flow (request, sent confirmation, reset confirm, completion), using configured email backend.
+
+
+5.2 Profile Management
+FR-PRO-001
+The system shall maintain a profile per user containing full name, account type, phone, location, description, profile image, and hotel verification fields.
+
+FR-PRO-002
+Guest users shall be able to view a guest profile page.
+
+FR-PRO-003
+Users shall be able to update profile image.
+
+FR-PRO-004
+Users shall be able to update username, phone number, and location.
+
+FR-PRO-005
+Hotel users shall additionally be able to update hotel description.
+
+FR-PRO-006
+The system shall reject profile username updates that conflict with existing usernames.
+
+
+5.3 Hotel Verification and Approval Workflow
+FR-HV-001
+Hotel profiles shall contain verification status values: pending, approved, rejected.
+
+FR-HV-002
+A hotel shall be considered operational only when verification status is approved.
+
+FR-HV-003
+Unapproved hotel users attempting role-only pages shall be redirected away from hotel operational pages.
+
+FR-HV-004
+Admin shall be able to approve a hotel account; approval shall set verification status to approved and activate user if inactive.
+
+FR-HV-005
+Admin shall be able to reject a hotel account; rejection shall set status to rejected and deactivate user.
+
+
+5.4 Guest Hotel Discovery and Search
+FR-SRCH-001
+Guest home shall provide room search using parameters:
+- location
+- hotel_name
+- checkin date
+- checkout date
+- guests count
+
+FR-SRCH-002
+Search shall only return rooms with available_rooms > 0 and hotels with hotel account type.
+
+FR-SRCH-003
+Search shall validate that checkout date is on/after checkin date.
+
+FR-SRCH-004
+Search shall filter by guest capacity (room capacity >= guests).
+
+FR-SRCH-005
+Search results shall include room/hotel details sorted by rate then hotel name.
+
+FR-SRCH-006
+Search results shall enrich each hotel with aggregate review stats (average rating, review count) and a small set of recent reviews from eligible bookings.
+
+FR-SRCH-007
+Guest shall be able to open a hotel public profile page from search context.
+
+
+5.5 Hotel Public Profile and Facilities
+FR-HP-001
+Hotel public profile shall display hotel details, available listed rooms, and reviews.
+
+FR-HP-002
+Only guests with at least one confirmed/completed booking at a hotel shall be eligible to submit/update a review for that hotel.
+
+FR-HP-003
+Hotel facility images shall be managed by the hotel owner profile with a maximum of 6 images.
+
+FR-HP-004
+Hotel users shall be able to upload multiple facility images up to the remaining slot limit.
+
+FR-HP-005
+Hotel users shall be able to delete a facility image.
+
+FR-HP-006
+Hotel users shall be able to replace a facility image file.
+
+FR-HP-007
+Hotel users shall be able to reorder facility images (move previous/next) through sort order swapping.
+
+
+5.6 Hotel Room Management
+FR-RM-001
+Hotel users shall be able to create room listings with room type, capacity, nightly rate, available rooms, checkin date, and checkout date.
+
+FR-RM-002
+Room date validation shall reject checkout dates earlier than checkin dates.
+
+FR-RM-003
+Hotel users shall be able to edit existing room listings.
+
+FR-RM-004
+If a room update sets available_rooms to 0:
+- if booking history exists for that room, the room shall remain and availability becomes 0
+- if no bookings exist, the room entry may be deleted
+
+FR-RM-005
+Hotels shall be able to view their room list ordered by latest created first.
+
+
+5.7 Booking Checkout and Creation
+FR-BKG-001
+Guest users shall be able to open checkout for a selected room.
+
+FR-BKG-002
+Checkout form shall include guest name, guest email (fixed from account email), phone, rooms count, payment option, and payment method (when pay now).
+
+FR-BKG-003
+Rooms count shall be validated against current room availability.
+
+FR-BKG-004
+For pay now option, guest phone and payment method shall be mandatory.
+
+FR-BKG-005
+Booking creation shall execute inside an atomic transaction and lock the room row to prevent overselling.
+
+FR-BKG-006
+Upon successful booking creation, room available_rooms shall decrement by booked count.
+
+FR-BKG-007
+Booking status initialization rules:
+- payment option pay_now => confirmed
+- payment option pay_later => pending
+
+FR-BKG-008
+When pay now + digital payment method is selected, booking shall be temporarily created as pending (pay_later) and redirected to mock digital payment flow.
+
+FR-BKG-009
+Guest profile full name/phone shall be updated from checkout form data on successful booking.
+
+
+5.8 Payment Behavior (Current State)
+FR-PAY-001
+The system shall provide a mock digital payment page for pending bookings created via digital payment path.
+
+FR-PAY-002
+On successful mock payment submit, booking shall become pay_now + confirmed.
+
+FR-PAY-003
+If booking is no longer pending when mock payment is submitted, user shall be redirected to booking history.
+
+
+5.9 Booking Lifecycle and State Transitions
+FR-LIFE-001
+Booking status values shall be: pending, confirmed, completed, canceled, expired.
+
+FR-LIFE-002
+Pending pay_later bookings older than 12 hours shall automatically expire.
+
+FR-LIFE-003
+When a pending booking expires, booked room inventory shall be returned to room availability.
+
+FR-LIFE-004
+Confirmed bookings shall transition to completed when current date is on/after room checkout date.
+
+FR-LIFE-005
+Guests shall be able to cancel own pending bookings only; cancel action shall return booked rooms to availability.
+
+FR-LIFE-006
+Hotels shall be able to cancel pending bookings for their rooms only; cancel action shall return booked rooms to availability.
+
+FR-LIFE-007
+Guests shall be able to pay now for own pending pay_later bookings from history to confirm booking.
+
+FR-LIFE-008
+Lifecycle refresh/expiration checks shall occur within history/checkout related flows to keep statuses current.
+
+
+5.10 Booking History and Filtering
+FR-HIST-001
+Guest booking history shall list only that guest’s bookings.
+
+FR-HIST-002
+Hotel booking history shall list bookings for rooms owned by that hotel.
+
+FR-HIST-003
+History pages shall support filter tabs by state: all, pending, confirmed, completed, canceled, expired.
+
+FR-HIST-004
+History listings shall display computed booking state labels and payment expiry timestamp for pending bookings.
+
+
+5.11 Reviews and Ratings
+FR-REV-001
+A booking review shall contain rating (1..5) and text comment.
+
+FR-REV-002
+A booking can have at most one associated review (one-to-one).
+
+FR-REV-003
+Guests shall only create/update review for completed bookings.
+
+FR-REV-004
+Hotel review center shall display all reviews linked to hotel bookings with status confirmed/completed.
+
+FR-REV-005
+Hotel review center shall provide rating filter (1..5 stars) and rating summary counts.
+
+FR-REV-006
+Hotel and public profile review aggregates shall show average rating and total review count when data exists.
+
+
+5.12 Notifications
+FR-NOTIF-001
+The system shall generate booking status notifications for both guest and hotel recipients when a booking is created or status changes.
+
+FR-NOTIF-002
+Notification uniqueness shall be enforced per recipient + booking + status.
+
+FR-NOTIF-003
+The system shall generate hotel notifications when reviews are added or updated.
+
+FR-NOTIF-004
+Notifications shall be exposed globally via template context processor for authenticated users.
+
+FR-NOTIF-005
+Notification context shall include up to 8 unread notifications and unread count.
+
+FR-NOTIF-006
+Notification links shall deep-link into relevant history/reviews page and mark as read when selected in supported views.
+
+
+5.13 Admin Panel Functions
+FR-ADM-001
+Admin panel pages shall be accessible only to authenticated staff/superusers.
+
+FR-ADM-002
+Admin dashboard shall display counts for bookings, rooms, and accounts.
+
+FR-ADM-003
+Admin shall be able to list/create/edit/delete rooms.
+
+FR-ADM-004
+Admin shall be able to list bookings and filter by booking created date.
+
+FR-ADM-005
+Admin shall be able to create/edit/delete bookings.
+
+FR-ADM-006
+Admin shall be able to list accounts and filter by account type (all/guest/hotel/admin).
+
+FR-ADM-007
+Admin shall be able to create/edit/delete accounts (except self-delete restriction).
+
+FR-ADM-008
+Admin account create/edit shall synchronize user fields and profile fields, including hotel verification behavior affecting active status.
+
+
+==================================================
+6. Business Rules and Constraints
+==================================================
+BR-001 Account Type Rules
+- account_type must be one of: guest, hotel, admin.
+
+BR-002 Hotel Approval Rule
+- Hotel user operational access requires profile verification approved.
+
+BR-003 Facility Image Limit Rule
+- Maximum 6 facility images per hotel profile.
+
+BR-004 Booking Expiry Rule
+- Pending pay_later booking expires after 12 hours from created_at.
+
+BR-005 Review Eligibility Rule
+- Reviews are allowed only for confirmed/completed context on hotel public page and completed context on booking history posting.
+
+BR-006 Inventory Consistency Rule
+- Room availability decreases when booking is created and increases on cancel/expire for pending bookings.
+
+BR-007 Date Validity Rule
+- Room checkout date must be >= checkin date.
+
+BR-008 Role Access Rule
+- Guest pages are restricted from hotel users and vice versa for operational flows.
+
+==================================================
+7. Data Entities (Functional View)
+==================================================
+- User (Django auth user)
+- Profile (1:1 with User)
+- ProfileFacilityImage (many per Profile)
+- RoomType
+- Room (belongs to hotel profile)
+- Booking (belongs to guest profile and room)
+- BookingReview (1:1 with Booking)
+- BookingNotification (recipient + booking event)
+
+==================================================
+8. External Interfaces and Integrations
+==================================================
+- Email: Django console email backend for password reset (development behavior).
+- Media storage: local media directory for profile/facility/license images.
+- Payment: internal mock digital payment page (no external gateway).
+
+==================================================
+9. Security and Access Control (Functional)
+==================================================
+- Login required for account-protected flows.
+- Role-based routing and redirects enforce guest/hotel/admin boundaries.
+- Admin panel protected by staff/superuser checks.
+- Form validation enforces key input constraints.
+
+==================================================
+10. Error and Exception Behaviors (Functional)
+==================================================
+- Invalid login credentials: explicit error message.
+- Inactive hotel states: pending/rejected specific messages.
+- Invalid date ranges: validation errors shown.
+- Insufficient room availability at checkout: non-availability error and booking blocked.
+- Non-POST access to mutation endpoints typically redirects to safe list/home page.
+
+==================================================
+11. Assumptions
+==================================================
+- Single timezone setting (UTC) is used for booking status timing.
+- Currency and locale display rules are default/simple.
+- Console email backend is acceptable for non-production operation.
+
+==================================================
+12. Known Functional Gaps / Future Requirements
+==================================================
+- Replace mock digital payment with real payment gateway.
+- Introduce explicit audit logging for critical admin actions.
+- Add API layer for mobile/third-party integration.
+- Add richer cancellation policies and refund states.
+- Add automated background scheduler for periodic status transitions (currently transition logic is request-driven in key flows).
+
+End of Document

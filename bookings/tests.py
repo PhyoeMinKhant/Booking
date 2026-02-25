@@ -8,7 +8,7 @@ from django.utils import timezone
 from accounts.models import Profile
 from rooms.models import Room, RoomType
 
-from .models import Booking, BookingNotification
+from .models import Booking, BookingNotification, BookingReview
 
 
 class BookingStatusRulesTests(TestCase):
@@ -75,7 +75,7 @@ class BookingStatusRulesTests(TestCase):
 
 		self.assertEqual(booking.status, Booking.Status.CONFIRMED)
 
-	def test_pending_pay_later_expires_after_three_hours(self):
+	def test_pending_pay_later_expires_after_twelve_hours(self):
 		booking = Booking.objects.create(
 			guest=self.guest_profile,
 			room=self.room,
@@ -85,7 +85,10 @@ class BookingStatusRulesTests(TestCase):
 			payment_option=Booking.PaymentOption.PAY_LATER,
 		)
 
-		old_created_at = timezone.now() - datetime.timedelta(hours=3, minutes=1)
+		old_created_at = timezone.now() - datetime.timedelta(
+			hours=Booking.PENDING_PAYMENT_EXPIRY_HOURS,
+			minutes=1,
+		)
 		Booking.objects.filter(id=booking.id).update(created_at=old_created_at)
 		booking.refresh_from_db()
 
@@ -94,7 +97,7 @@ class BookingStatusRulesTests(TestCase):
 
 		self.assertEqual(booking.status, Booking.Status.EXPIRED)
 
-	def test_pending_pay_later_remains_pending_before_three_hours(self):
+	def test_pending_pay_later_remains_pending_before_twelve_hours(self):
 		booking = Booking.objects.create(
 			guest=self.guest_profile,
 			room=self.room,
@@ -104,7 +107,10 @@ class BookingStatusRulesTests(TestCase):
 			payment_option=Booking.PaymentOption.PAY_LATER,
 		)
 
-		recent_created_at = timezone.now() - datetime.timedelta(hours=2, minutes=59)
+		recent_created_at = timezone.now() - datetime.timedelta(
+			hours=Booking.PENDING_PAYMENT_EXPIRY_HOURS - 1,
+			minutes=59,
+		)
 		Booking.objects.filter(id=booking.id).update(created_at=recent_created_at)
 		booking.refresh_from_db()
 
@@ -241,7 +247,10 @@ class BookingStatusRulesTests(TestCase):
 		self.room.available_rooms = 0
 		self.room.save(update_fields=["available_rooms"])
 
-		old_created_at = timezone.now() - datetime.timedelta(hours=3, minutes=1)
+		old_created_at = timezone.now() - datetime.timedelta(
+			hours=Booking.PENDING_PAYMENT_EXPIRY_HOURS,
+			minutes=1,
+		)
 		Booking.objects.filter(id=booking.id).update(created_at=old_created_at)
 
 		self.client.login(username="guest_user", password="pass1234")
@@ -374,3 +383,251 @@ class BookingStatusRulesTests(TestCase):
 		booking.refresh_from_db()
 		self.assertEqual(booking.payment_option, Booking.PaymentOption.PAY_NOW)
 		self.assertEqual(booking.status, Booking.Status.CONFIRMED)
+
+	def test_guest_history_marks_notification_as_read(self):
+		booking = Booking.objects.create(
+			guest=self.guest_profile,
+			room=self.room,
+			guest_name="Guest User",
+			guest_email="guest@example.com",
+			guest_phone="1234567890",
+			payment_option=Booking.PaymentOption.PAY_LATER,
+		)
+		notification = BookingNotification.objects.get(
+			recipient=self.guest_profile,
+			booking=booking,
+			status=Booking.Status.PENDING,
+		)
+
+		self.client.login(username="guest_user", password="pass1234")
+		response = self.client.get(
+			f"{reverse('booking_history')}?state=all&notification={notification.id}"
+		)
+
+		self.assertEqual(response.status_code, 200)
+		notification.refresh_from_db()
+		self.assertTrue(notification.is_read)
+
+	def test_hotel_history_marks_notification_as_read(self):
+		booking = Booking.objects.create(
+			guest=self.guest_profile,
+			room=self.room,
+			guest_name="Guest User",
+			guest_email="guest@example.com",
+			guest_phone="1234567890",
+			payment_option=Booking.PaymentOption.PAY_LATER,
+		)
+		notification = BookingNotification.objects.get(
+			recipient=self.hotel_profile,
+			booking=booking,
+			status=Booking.Status.PENDING,
+		)
+
+		self.client.login(username="hotel_user", password="pass1234")
+		response = self.client.get(
+			f"{reverse('hotel_booking_history')}?state=all&notification={notification.id}"
+		)
+
+		self.assertEqual(response.status_code, 200)
+		notification.refresh_from_db()
+		self.assertTrue(notification.is_read)
+
+	def test_checkout_pay_now_credit_card_confirms_booking(self):
+		self.client.login(username="guest_user", password="pass1234")
+		response = self.client.post(
+			reverse("booking_checkout", kwargs={"room_id": self.room.id}),
+			{
+				"guest_name": "Guest User",
+				"guest_email": "guest@example.com",
+				"guest_phone": "1234567890",
+				"rooms_count": 1,
+				"payment_option": Booking.PaymentOption.PAY_NOW,
+				"payment_method": "credit_card",
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(response.url, reverse("home"))
+		booking = Booking.objects.latest("id")
+		self.assertEqual(booking.payment_option, Booking.PaymentOption.PAY_NOW)
+		self.assertEqual(booking.status, Booking.Status.CONFIRMED)
+
+	def test_checkout_pay_now_digital_redirects_to_mock_payment(self):
+		self.client.login(username="guest_user", password="pass1234")
+		response = self.client.post(
+			reverse("booking_checkout", kwargs={"room_id": self.room.id}),
+			{
+				"guest_name": "Guest User",
+				"guest_email": "guest@example.com",
+				"guest_phone": "1234567890",
+				"rooms_count": 1,
+				"payment_option": Booking.PaymentOption.PAY_NOW,
+				"payment_method": "digital_payment",
+			},
+		)
+
+		booking = Booking.objects.latest("id")
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(
+			response.url,
+			reverse("booking_mock_digital_payment", kwargs={"booking_id": booking.id}),
+		)
+		self.assertEqual(booking.status, Booking.Status.PENDING)
+
+	def test_mock_digital_payment_confirms_booking(self):
+		booking = Booking.objects.create(
+			guest=self.guest_profile,
+			room=self.room,
+			guest_name="Guest User",
+			guest_email="guest@example.com",
+			guest_phone="1234567890",
+			payment_option=Booking.PaymentOption.PAY_LATER,
+		)
+
+		self.client.login(username="guest_user", password="pass1234")
+		response = self.client.post(
+			reverse("booking_mock_digital_payment", kwargs={"booking_id": booking.id})
+		)
+
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(response.url, reverse("booking_history"))
+		booking.refresh_from_db()
+		self.assertEqual(booking.payment_option, Booking.PaymentOption.PAY_NOW)
+		self.assertEqual(booking.status, Booking.Status.CONFIRMED)
+
+	def test_guest_can_edit_existing_hotel_review(self):
+		booking = Booking.objects.create(
+			guest=self.guest_profile,
+			room=self.room,
+			guest_name="Guest User",
+			guest_email="guest@example.com",
+			guest_phone="1234567890",
+			payment_option=Booking.PaymentOption.PAY_NOW,
+		)
+		review = BookingReview.objects.create(
+			booking=booking,
+			rating=2,
+			comment="Old review",
+		)
+
+		self.client.login(username="guest_user", password="pass1234")
+		response = self.client.post(
+			reverse("guest_hotel_profile", kwargs={"hotel_id": self.hotel_profile.id}),
+			{
+				f"hotel-review-{self.hotel_profile.id}-rating": 5,
+				f"hotel-review-{self.hotel_profile.id}-comment": "Updated review",
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		review.refresh_from_db()
+		self.assertEqual(review.rating, 5)
+		self.assertEqual(review.comment, "Updated review")
+		self.assertEqual(BookingReview.objects.filter(booking__room__hotel=self.hotel_profile).count(), 1)
+		notification = BookingNotification.objects.get(
+			recipient=self.hotel_profile,
+			booking=booking,
+			status=BookingNotification.Type.REVIEW_UPDATED,
+		)
+		self.assertFalse(notification.is_read)
+
+	def test_guest_rating_submission_notifies_hotel_immediately(self):
+		booking = Booking.objects.create(
+			guest=self.guest_profile,
+			room=self.room,
+			guest_name="Guest User",
+			guest_email="guest@example.com",
+			guest_phone="1234567890",
+			payment_option=Booking.PaymentOption.PAY_NOW,
+		)
+
+		self.client.login(username="guest_user", password="pass1234")
+		response = self.client.post(
+			reverse("guest_hotel_profile", kwargs={"hotel_id": self.hotel_profile.id}),
+			{
+				f"hotel-review-{self.hotel_profile.id}-rating": 4,
+				f"hotel-review-{self.hotel_profile.id}-comment": "Great stay",
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		notification = BookingNotification.objects.get(
+			recipient=self.hotel_profile,
+			booking=booking,
+			status=BookingNotification.Type.REVIEW_ADDED,
+		)
+		self.assertFalse(notification.is_read)
+		self.assertEqual(notification.message, "A guest submitted a new rating and review.")
+
+	def test_hotel_review_notification_link_targets_reviews_page(self):
+		booking = Booking.objects.create(
+			guest=self.guest_profile,
+			room=self.room,
+			guest_name="Guest User",
+			guest_email="guest@example.com",
+			guest_phone="1234567890",
+			payment_option=Booking.PaymentOption.PAY_NOW,
+		)
+		notification = BookingNotification.objects.create(
+			recipient=self.hotel_profile,
+			booking=booking,
+			status=BookingNotification.Type.REVIEW_ADDED,
+			message="A guest submitted a new rating and review.",
+		)
+
+		self.client.login(username="hotel_user", password="pass1234")
+		response = self.client.get(reverse("hotel_home"))
+
+		self.assertEqual(response.status_code, 200)
+		links = [item.history_url for item in response.context["booking_notifications"]]
+		self.assertIn(
+			f"{reverse('hotel_reviews')}?notification={notification.id}",
+			links,
+		)
+
+	def test_hotel_reviews_page_marks_review_notification_as_read(self):
+		booking = Booking.objects.create(
+			guest=self.guest_profile,
+			room=self.room,
+			guest_name="Guest User",
+			guest_email="guest@example.com",
+			guest_phone="1234567890",
+			payment_option=Booking.PaymentOption.PAY_NOW,
+		)
+		notification = BookingNotification.objects.create(
+			recipient=self.hotel_profile,
+			booking=booking,
+			status=BookingNotification.Type.REVIEW_UPDATED,
+			message="A guest updated their rating and review.",
+		)
+
+		self.client.login(username="hotel_user", password="pass1234")
+		response = self.client.get(
+			f"{reverse('hotel_reviews')}?notification={notification.id}"
+		)
+
+		self.assertEqual(response.status_code, 200)
+		notification.refresh_from_db()
+		self.assertTrue(notification.is_read)
+
+	def test_hotel_reviews_page_lists_guest_reviews(self):
+		booking = Booking.objects.create(
+			guest=self.guest_profile,
+			room=self.room,
+			guest_name="Guest User",
+			guest_email="guest@example.com",
+			guest_phone="1234567890",
+			payment_option=Booking.PaymentOption.PAY_NOW,
+		)
+		BookingReview.objects.create(
+			booking=booking,
+			rating=4,
+			comment="Great stay",
+		)
+
+		self.client.login(username="hotel_user", password="pass1234")
+		response = self.client.get(reverse("hotel_reviews"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, "Ratings &amp; Reviews")
+		self.assertContains(response, "Great stay")

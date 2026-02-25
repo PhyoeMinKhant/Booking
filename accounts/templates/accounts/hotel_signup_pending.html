@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hotel Account Under Review</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/login.css' %}" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <header class="card__header">
+          <h1>Registration Received</h1>
+          <p>Your hotel account is being reviewed by the admin team and it will be processed within 3 days.</p>
+        </header>
+
+        <a class="button" href="{% url 'login' %}">
+          <span class="button__icon">←</span>
+          Return to Login
+        </a>
+      </section>
+    </main>
+  </body>
+</html>

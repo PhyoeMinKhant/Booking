@@ -3,6 +3,7 @@ from functools import wraps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.dateparse import parse_date
 
 from bookings.models import Booking
 from rooms.models import Room
@@ -68,8 +69,21 @@ def panel_room_delete_view(request, room_id: int):
 
 @admin_required
 def panel_bookings_view(request):
+    created_date = (request.GET.get("created_date") or "").strip()
+    parsed_created_date = parse_date(created_date) if created_date else None
+
     bookings = Booking.objects.select_related("guest", "room", "room__hotel", "room__room_type").order_by("-created_at")
-    return render(request, "accounts/admin_panel/bookings_list.html", {"bookings": bookings})
+    if parsed_created_date:
+        bookings = bookings.filter(created_at__date=parsed_created_date)
+
+    return render(
+        request,
+        "accounts/admin_panel/bookings_list.html",
+        {
+            "bookings": bookings,
+            "created_date": created_date if parsed_created_date else "",
+        },
+    )
 
 
 @admin_required
@@ -106,8 +120,70 @@ def panel_booking_delete_view(request, booking_id: int):
 
 @admin_required
 def panel_accounts_view(request):
+    account_type_filter = (request.GET.get("account_type") or "all").strip().lower()
+    allowed_filters = {
+        "all",
+        Profile.AccountType.GUEST,
+        Profile.AccountType.HOTEL,
+        Profile.AccountType.ADMIN,
+    }
+    if account_type_filter not in allowed_filters:
+        account_type_filter = "all"
+
     users = get_user_model().objects.select_related("profile").order_by("-date_joined")
-    return render(request, "accounts/admin_panel/accounts_list.html", {"users": users})
+    if account_type_filter != "all":
+        users = users.filter(profile__account_type=account_type_filter)
+
+    return render(
+        request,
+        "accounts/admin_panel/accounts_list.html",
+        {
+            "users": users,
+            "account_type_filter": account_type_filter,
+            "account_type_options": [
+                ("all", "All"),
+                (Profile.AccountType.GUEST, "Guest"),
+                (Profile.AccountType.HOTEL, "Hotel"),
+                (Profile.AccountType.ADMIN, "Admin"),
+            ],
+        },
+    )
+
+
+@admin_required
+def panel_account_approve_hotel_view(request, user_id: int):
+    if request.method != "POST":
+        return redirect("panel_accounts")
+
+    user_model = get_user_model()
+    target_user = get_object_or_404(user_model.objects.select_related("profile"), id=user_id)
+    profile = target_user.profile
+    if profile.account_type == Profile.AccountType.HOTEL and profile.hotel_license_image:
+        profile.hotel_verification_status = Profile.HotelVerificationStatus.APPROVED
+        profile.save(update_fields=["hotel_verification_status"])
+        if not target_user.is_active:
+            target_user.is_active = True
+            target_user.save(update_fields=["is_active"])
+
+    return redirect("panel_accounts")
+
+
+@admin_required
+def panel_account_reject_hotel_view(request, user_id: int):
+    if request.method != "POST":
+        return redirect("panel_accounts")
+
+    user_model = get_user_model()
+    target_user = get_object_or_404(user_model.objects.select_related("profile"), id=user_id)
+    profile = target_user.profile
+    if profile.account_type == Profile.AccountType.HOTEL:
+        profile.hotel_verification_status = Profile.HotelVerificationStatus.REJECTED
+        profile.save(update_fields=["hotel_verification_status"])
+        if target_user.is_active:
+            target_user.is_active = False
+            target_user.save(update_fields=["is_active"])
+
+    return redirect("panel_accounts")
 
 
 @admin_required

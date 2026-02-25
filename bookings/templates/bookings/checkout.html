@@ -150,6 +150,13 @@
               {{ form.payment_option }}
               {{ form.payment_option.errors }}
             </label>
+
+            <label id="payment-method-row">
+              Payment Method
+              {{ form.payment_method }}
+              {{ form.payment_method.errors }}
+              <p class="hint">Choose your pay-now method: credit card or digital payment.</p>
+            </label>
           </div>
 
           <div class="actions">
@@ -159,5 +166,27 @@
         </form>
       </section>
     </main>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var paymentOption = document.getElementById("id_payment_option");
+        var paymentMethodRow = document.getElementById("payment-method-row");
+        var paymentMethod = document.getElementById("id_payment_method");
+
+        if (!paymentOption || !paymentMethodRow || !paymentMethod) {
+          return;
+        }
+
+        function togglePaymentMethod() {
+          var payNowSelected = paymentOption.value === "pay_now";
+          paymentMethodRow.style.display = payNowSelected ? "grid" : "none";
+          if (!payNowSelected) {
+            paymentMethod.value = "";
+          }
+        }
+
+        togglePaymentMethod();
+        paymentOption.addEventListener("change", togglePaymentMethod);
+      });
+    </script>
   </body>
 </html>

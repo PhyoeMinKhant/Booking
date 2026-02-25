@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hotel Profile</title>
-    <link rel="stylesheet" href="{% static 'accounts/css/hotel_profile.css' %}?v=20260223a" />
+    <link rel="stylesheet" href="{% static 'accounts/css/hotel_profile.css' %}?v=20260224b" />
   </head>
   <body>
     <header class="topbar">
@@ -48,6 +48,13 @@
                 <span class="profile-item__subtitle">View recent reservations</span>
               </span>
             </a>
+            <a class="profile-item" href="{% url 'hotel_reviews' %}" role="menuitem">
+              <span class="profile-item__icon">⭐</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Ratings &amp; Reviews</span>
+                <span class="profile-item__subtitle">See guest feedback</span>
+              </span>
+            </a>
             <div class="profile-divider"></div>
             <a class="profile-item profile-item--danger" href="{% url 'logout' %}" role="menuitem">
               <span class="profile-item__icon">↗</span>
@@ -73,6 +80,10 @@
             <a class="sidebar-link" href="{% url 'hotel_booking_history' %}">
               <span class="sidebar-link__icon">📅</span>
               <span>Booking History</span>
+            </a>
+            <a class="sidebar-link" href="{% url 'hotel_reviews' %}">
+              <span class="sidebar-link__icon">⭐</span>
+              <span>Ratings &amp; Reviews</span>
             </a>
             <a class="sidebar-link sidebar-link--danger" href="{% url 'logout' %}">
               <span class="sidebar-link__icon">↗</span>
@@ -157,7 +168,7 @@
             />
           </label>
 
-          <label class="field">
+          <label class="field" id="ratings-reviews">
             <span>Rating</span>
             <div class="field__value">
               {% if avg_rating %}

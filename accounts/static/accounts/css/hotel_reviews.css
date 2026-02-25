@@ -1,0 +1,150 @@
+.page {
+  padding: 2rem 1.25rem 2.5rem;
+}
+
+.page__content {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.page-header h1 {
+  margin: 0;
+}
+
+.page-header p {
+  margin: 0.35rem 0 0;
+  color: #5f6b7a;
+}
+
+.summary-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem;
+}
+
+.rating-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.rating-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid #dbe3ee;
+  background: #fff;
+  color: #223043;
+  text-decoration: none;
+  font-size: 0.88rem;
+}
+
+.rating-chip strong {
+  color: #485569;
+}
+
+.rating-chip.is-active {
+  border-color: #2b6cff;
+  background: #eef4ff;
+  color: #1244b7;
+}
+
+.rating-chip--all {
+  margin-left: 0.2rem;
+}
+
+.summary-stat {
+  background: #fff;
+  border: 1px solid #e4e8ee;
+  border-radius: 12px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.summary-stat__label {
+  color: #5f6b7a;
+  font-size: 0.9rem;
+}
+
+.summary-stat__value {
+  font-size: 1.15rem;
+}
+
+.reviews-panel {
+  background: #fff;
+  border: 1px solid #e4e8ee;
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.reviews-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.review-card {
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.review-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.review-card__top h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.review-card__top p {
+  margin: 0.2rem 0 0;
+  color: #5f6b7a;
+  font-size: 0.9rem;
+}
+
+.review-card__rating {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.review-card__comment {
+  margin: 0;
+  color: #1f2d3d;
+}
+
+.review-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  font-size: 0.85rem;
+  color: #5f6b7a;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 1rem 0.4rem;
+}
+
+.empty-state__icon {
+  font-size: 1.6rem;
+}
+
+.empty-state h2 {
+  margin: 0.35rem 0 0.25rem;
+}
+
+.empty-state p {
+  margin: 0;
+  color: #5f6b7a;
+}

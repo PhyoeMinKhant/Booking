@@ -28,7 +28,7 @@
           </div>
         {% endif %}
 
-        <form class="form" method="post">
+        <form class="form" method="post" enctype="multipart/form-data">
           {% csrf_token %}
 
           {% with selected=form.data.account_type|default:"guest" %}
@@ -57,7 +57,6 @@
               </label>
             </div>
           </div>
-          {% endwith %}
 
           <label class="field">
             <span>Username</span>
@@ -91,6 +90,22 @@
             <input type="password" name="confirm_password" placeholder="Confirm your password" required />
           </label>
 
+          <label
+            class="field"
+            id="hotel-license-field"
+            {% if selected != "hotel" %}hidden style="display: none;"{% endif %}
+          >
+            <span>Hotel License Image (required for hotel account)</span>
+            <input
+              id="hotel-license-input"
+              type="file"
+              name="hotel_license_image"
+              accept="image/*"
+              {% if selected == "hotel" %}required{% endif %}
+            />
+          </label>
+          {% endwith %}
+
           <button class="button" type="submit">
             <span class="button__icon">＋</span>
             Create Account
@@ -100,5 +115,32 @@
         </form>
       </section>
     </main>
+    <script>
+      const accountTypeInputs = document.querySelectorAll('input[name="account_type"]');
+      const hotelLicenseField = document.getElementById("hotel-license-field");
+      const hotelLicenseInput = document.getElementById("hotel-license-input");
+
+      const syncHotelLicenseField = () => {
+        const selectedType = document.querySelector('input[name="account_type"]:checked')?.value;
+        const isHotel = selectedType === "hotel";
+
+        if (hotelLicenseField) {
+          hotelLicenseField.hidden = !isHotel;
+          hotelLicenseField.style.display = isHotel ? "flex" : "none";
+        }
+        if (hotelLicenseInput) {
+          hotelLicenseInput.required = isHotel;
+          if (!isHotel) {
+            hotelLicenseInput.value = "";
+          }
+        }
+      };
+
+      accountTypeInputs.forEach((input) => {
+        input.addEventListener("change", syncHotelLicenseField);
+      });
+
+      syncHotelLicenseField();
+    </script>
   </body>
 </html>

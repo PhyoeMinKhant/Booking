@@ -1,0 +1,152 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ratings & Reviews</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/hotel-home.css' %}?v=20260224b" />
+    <link rel="stylesheet" href="{% static 'accounts/css/hotel_reviews.css' %}?v=20260225a" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__icon">🏨</span>
+        <span class="brand__name">StayFinder</span>
+      </div>
+      <div class="topbar__actions">
+        {% include 'accounts/partials/notifications_menu.html' %}
+        <details class="profile-menu">
+          <summary class="profile-trigger">
+            <span class="profile-trigger__content">
+              <span class="profile-trigger__avatar">
+                {% if profile.profile_image %}
+                  <img src="{{ profile.profile_image.url }}" alt="Profile photo" />
+                {% elif profile.profile_image_url %}
+                  <img src="{{ profile.profile_image_url }}" alt="Profile photo" />
+                {% else %}
+                  <span class="profile-trigger__initial">{{ profile.full_name|slice:":1" }}</span>
+                {% endif %}
+              </span>
+              <span class="profile-trigger__text">
+                <span class="profile-trigger__name">{{ profile.full_name }}</span>
+              </span>
+              <span class="profile-trigger__chevron">▾</span>
+            </span>
+          </summary>
+          <div class="profile-dropdown" role="menu">
+            <a class="profile-item" href="{% url 'hotel_profile' %}" role="menuitem">
+              <span class="profile-item__icon">🏨</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Account Information</span>
+                <span class="profile-item__subtitle">View hotel profile details</span>
+              </span>
+            </a>
+            <a class="profile-item" href="{% url 'hotel_booking_history' %}" role="menuitem">
+              <span class="profile-item__icon">📅</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Booking History</span>
+                <span class="profile-item__subtitle">View recent reservations</span>
+              </span>
+            </a>
+            <a class="profile-item" href="{% url 'hotel_reviews' %}" role="menuitem">
+              <span class="profile-item__icon">⭐</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Ratings &amp; Reviews</span>
+                <span class="profile-item__subtitle">See guest feedback</span>
+              </span>
+            </a>
+            <div class="profile-divider"></div>
+            <a class="profile-item profile-item--danger" href="{% url 'logout' %}" role="menuitem">
+              <span class="profile-item__icon">↗</span>
+              <span class="profile-item__title">Sign Out</span>
+            </a>
+          </div>
+        </details>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="page__content">
+        <nav class="top-links" aria-label="Hotel navigation">
+          <a class="top-links__item" href="{% url 'hotel_home' %}">Room Management</a>
+          <a class="top-links__item" href="{% url 'hotel_booking_history' %}">Hotel Bookings</a>
+          <a class="top-links__item is-active" href="{% url 'hotel_reviews' %}">Ratings &amp; Reviews</a>
+        </nav>
+
+        <header class="page-header">
+          <h1>Ratings &amp; Reviews</h1>
+          <p>Track guest feedback and focus on areas that need attention.</p>
+        </header>
+
+        <section class="summary-panel" aria-label="Review summary">
+          <div class="summary-stat">
+            <span class="summary-stat__label">Average Rating</span>
+            <strong class="summary-stat__value">
+              {% if avg_rating %}
+                ⭐ {{ avg_rating }}/5
+              {% else %}
+                Not rated
+              {% endif %}
+            </strong>
+          </div>
+          <div class="summary-stat">
+            <span class="summary-stat__label">Total Reviews</span>
+            <strong class="summary-stat__value">{{ review_count }}</strong>
+          </div>
+        </section>
+
+        <section class="rating-breakdown" aria-label="Rating breakdown">
+          {% for item in rating_filters %}
+            <a
+              class="rating-chip{% if item.is_active %} is-active{% endif %}"
+              href="{% url 'hotel_reviews' %}?rating={{ item.value }}"
+            >
+              <span>{{ item.label }}</span>
+              <strong>{{ item.count }}</strong>
+            </a>
+          {% endfor %}
+          <a class="rating-chip rating-chip--all{% if not selected_rating %} is-active{% endif %}" href="{% url 'hotel_reviews' %}">
+            <span>All</span>
+          </a>
+        </section>
+
+        <section class="reviews-panel" aria-live="polite">
+          {% if reviews %}
+            <div class="reviews-list">
+              {% for review in reviews %}
+                <article class="review-card">
+                  <div class="review-card__top">
+                    <div>
+                      <h2>{{ review.booking.guest.full_name }}</h2>
+                      <p>{{ review.booking.room.room_type.name }} · Booking #{{ review.booking_id }}</p>
+                    </div>
+                    <span class="review-card__rating">⭐ {{ review.rating }}/5</span>
+                  </div>
+                  <p class="review-card__comment">{{ review.comment }}</p>
+                  <div class="review-card__meta">
+                    <span>Posted: {{ review.created_at|date:"M j, Y g:i A" }}</span>
+                    {% if review.updated_at != review.created_at %}
+                      <span>Updated: {{ review.updated_at|date:"M j, Y g:i A" }}</span>
+                    {% endif %}
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="empty-state">
+              <div class="empty-state__icon">⭐</div>
+              {% if selected_rating %}
+                <h2>No {{ selected_rating }}-star reviews yet</h2>
+                <p>Try selecting another rating filter to see more feedback.</p>
+              {% else %}
+                <h2>No ratings yet</h2>
+                <p>Guest reviews will appear here once submitted.</p>
+              {% endif %}
+            </div>
+          {% endif %}
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

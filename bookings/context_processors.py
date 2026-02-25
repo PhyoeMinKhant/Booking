@@ -20,7 +20,10 @@ def booking_notifications(request):
             "booking_notifications_unread_count": 0,
         }
 
-    notifications_qs = BookingNotification.objects.filter(recipient=profile).select_related("booking")
+    notifications_qs = BookingNotification.objects.filter(
+        recipient=profile,
+        is_read=False,
+    ).select_related("booking")
     history_url_name = (
         "hotel_booking_history"
         if profile.account_type == Profile.AccountType.HOTEL
@@ -28,11 +31,23 @@ def booking_notifications(request):
     )
     notifications = list(notifications_qs[:8])
     for notification in notifications:
-        notification.history_url = (
-            f"{reverse(history_url_name)}?state=all#booking-{notification.booking_id}"
-        )
+        if (
+            profile.account_type == Profile.AccountType.HOTEL
+            and notification.status
+            in {
+                BookingNotification.Type.REVIEW_ADDED,
+                BookingNotification.Type.REVIEW_UPDATED,
+            }
+        ):
+            notification.history_url = (
+                f"{reverse('hotel_reviews')}?notification={notification.id}"
+            )
+        else:
+            notification.history_url = (
+                f"{reverse(history_url_name)}?state=all&notification={notification.id}#booking-{notification.booking_id}"
+            )
 
     return {
         "booking_notifications": notifications,
-        "booking_notifications_unread_count": notifications_qs.filter(is_read=False).count(),
+        "booking_notifications_unread_count": notifications_qs.count(),
     }

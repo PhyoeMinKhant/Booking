@@ -82,10 +82,10 @@
               {% if review_form.errors %}
                 <p class="error-text">Please provide both rating and review.</p>
               {% endif %}
-              <button class="book-button" type="submit">Submit Review</button>
+              <button class="book-button" type="submit">
+                {% if existing_review %}Update Review{% else %}Submit Review{% endif %}
+              </button>
             </form>
-          {% elif existing_review %}
-            <p class="muted">You have already reviewed this hotel.</p>
           {% else %}
             <p class="muted">Leave a review after you have a confirmed or completed booking.</p>
           {% endif %}

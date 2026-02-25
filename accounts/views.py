@@ -7,7 +7,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 
 from bookings.forms import BookingReviewForm
-from bookings.models import Booking, BookingReview
+from bookings.models import Booking, BookingNotification, BookingReview
 
 from .forms import LoginForm, ProfileImageForm, ProfileUpdateForm, SignupForm
 from .models import Profile, ProfileFacilityImage
@@ -49,6 +49,22 @@ def login_view(request):
         user_model = get_user_model()
         matched_user = user_model.objects.filter(email__iexact=email).first()
         user = None
+        if matched_user and not matched_user.is_active and matched_user.check_password(password):
+            profile, _ = get_or_create_profile(matched_user)
+            if (
+                profile.account_type == Profile.AccountType.HOTEL
+                and profile.hotel_verification_status == Profile.HotelVerificationStatus.PENDING
+            ):
+                form.add_error(None, "Your hotel account is pending admin review.")
+            elif (
+                profile.account_type == Profile.AccountType.HOTEL
+                and profile.hotel_verification_status == Profile.HotelVerificationStatus.REJECTED
+            ):
+                form.add_error(None, "Your hotel account was rejected. Please contact support.")
+            else:
+                form.add_error(None, "Your account is inactive.")
+            return render(request, "accounts/login.html", {"form": form})
+
         if matched_user:
             user = authenticate(request, username=matched_user.username, password=password)
 
@@ -63,23 +79,32 @@ def login_view(request):
 
 
 def signup_view(request):
-    form = SignupForm(request.POST or None)
+    form = SignupForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
         email = form.cleaned_data["email"]
         username = form.cleaned_data["username"]
         password = form.cleaned_data["password"]
         account_type = form.cleaned_data["account_type"]
+        hotel_license_image = form.cleaned_data.get("hotel_license_image")
 
         user = Profile.create_user_with_profile(
             email=email,
             username=username,
             password=password,
             account_type=account_type,
+            hotel_license_image=hotel_license_image,
         )
+        if account_type == Profile.AccountType.HOTEL:
+            return redirect("hotel_signup_pending")
+
         login(request, user)
         return redirect(get_home_redirect(account_type))
 
     return render(request, "accounts/signup.html", {"form": form})
+
+
+def hotel_signup_pending_view(request):
+    return render(request, "accounts/hotel_signup_pending.html")
 
 
 @login_required
@@ -237,19 +262,21 @@ def guest_hotel_profile_view(request, hotel_id: int):
         .first()
     )
 
-    can_submit_review = eligible_booking is not None and existing_review is None
-    review_form = BookingReviewForm(request.POST or None, prefix=f"hotel-review-{hotel.id}")
+    can_submit_review = eligible_booking is not None
+    review_form = BookingReviewForm(
+        request.POST or None,
+        prefix=f"hotel-review-{hotel.id}",
+        instance=existing_review,
+    )
     review_error = ""
 
     if request.method == "POST":
         if not can_submit_review:
-            if existing_review is not None:
-                review_error = "You have already reviewed this hotel from your account."
-            else:
-                review_error = "You can review only after you have a confirmed or completed booking."
+            review_error = "You can review only after you have a confirmed or completed booking."
         elif review_form.is_valid():
             review = review_form.save(commit=False)
-            review.booking = eligible_booking
+            if review.booking_id is None:
+                review.booking = eligible_booking
             review.save()
             return redirect("guest_hotel_profile", hotel_id=hotel.id)
 
@@ -288,6 +315,8 @@ def hotel_home_view(request):
     profile, _ = get_or_create_profile(request.user)
     if profile.account_type != Profile.AccountType.HOTEL:
         return redirect("home")
+    if not profile.is_hotel_approved:
+        return redirect("login")
 
     if request.method == "POST":
         room_id = request.POST.get("room_id")
@@ -302,7 +331,11 @@ def hotel_home_view(request):
             available_rooms = form.cleaned_data["available_rooms"]
             if available_rooms == 0:
                 if room_instance:
-                    room_instance.delete()
+                    if room_instance.bookings.exists():
+                        room_instance.available_rooms = 0
+                        room_instance.save(update_fields=["available_rooms"])
+                    else:
+                        room_instance.delete()
             else:
                 room = form.save(commit=False)
                 room.hotel = profile
@@ -328,6 +361,16 @@ def hotel_profile_view(request):
     profile, _ = get_or_create_profile(request.user)
     if profile.account_type != Profile.AccountType.HOTEL:
         return redirect("home")
+    if not profile.is_hotel_approved:
+        return redirect("login")
+
+    notification_id = (request.GET.get("notification") or "").strip()
+    if notification_id.isdigit():
+        BookingNotification.objects.filter(
+            id=int(notification_id),
+            recipient=profile,
+            is_read=False,
+        ).update(is_read=True)
 
     review_stats = BookingReview.objects.filter(
         booking__room__hotel=profile,
@@ -350,6 +393,82 @@ def hotel_profile_view(request):
             "facility_remaining": facility_remaining,
             "avg_rating": round(float(avg_rating), 1) if avg_rating is not None else None,
             "review_count": review_count,
+        },
+    )
+
+
+@login_required
+def hotel_reviews_view(request):
+    profile, _ = get_or_create_profile(request.user)
+    if profile.account_type != Profile.AccountType.HOTEL:
+        return redirect("home")
+    if not profile.is_hotel_approved:
+        return redirect("login")
+
+    notification_id = (request.GET.get("notification") or "").strip()
+    if notification_id.isdigit():
+        BookingNotification.objects.filter(
+            id=int(notification_id),
+            recipient=profile,
+            is_read=False,
+        ).update(is_read=True)
+
+    rating_filter_param = (request.GET.get("rating") or "").strip()
+    selected_rating = None
+    if rating_filter_param.isdigit():
+        rating_value = int(rating_filter_param)
+        if 1 <= rating_value <= 5:
+            selected_rating = rating_value
+
+    base_reviews_qs = BookingReview.objects.filter(
+        booking__room__hotel=profile,
+        booking__status__in=[Booking.Status.CONFIRMED, Booking.Status.COMPLETED],
+    )
+
+    rating_counts_qs = (
+        base_reviews_qs.values("rating")
+        .annotate(total=Count("id"))
+        .order_by("-rating")
+    )
+    rating_counts = {row["rating"]: row["total"] for row in rating_counts_qs}
+    rating_filters = [
+        {
+            "value": rating,
+            "label": f"{rating}★",
+            "count": rating_counts.get(rating, 0),
+            "is_active": selected_rating == rating,
+        }
+        for rating in range(5, 0, -1)
+    ]
+
+    filtered_reviews_qs = base_reviews_qs
+    if selected_rating is not None:
+        filtered_reviews_qs = filtered_reviews_qs.filter(rating=selected_rating)
+
+    reviews = list(
+        filtered_reviews_qs.select_related(
+            "booking",
+            "booking__guest",
+            "booking__room",
+            "booking__room__room_type",
+        )
+        .order_by("-updated_at")
+    )
+
+    review_stats = base_reviews_qs.aggregate(avg_rating=Avg("rating"), review_count=Count("id"))
+
+    avg_rating = review_stats["avg_rating"]
+
+    return render(
+        request,
+        "accounts/hotel_reviews.html",
+        {
+            "profile": profile,
+            "reviews": reviews,
+            "avg_rating": round(float(avg_rating), 1) if avg_rating is not None else None,
+            "review_count": int(review_stats["review_count"] or 0),
+            "selected_rating": selected_rating,
+            "rating_filters": rating_filters,
         },
     )
 

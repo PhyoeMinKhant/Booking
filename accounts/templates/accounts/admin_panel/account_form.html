@@ -10,6 +10,20 @@
   <form method="post" class="form-card">
     {% csrf_token %}
     {{ form.non_field_errors }}
+
+    {% if mode == 'edit' and target_user.profile.account_type == 'hotel' %}
+      <div class="field">
+        <span>Hotel License</span>
+        {% if target_user.profile.hotel_license_image %}
+          <a href="{{ target_user.profile.hotel_license_image.url }}" target="_blank" rel="noopener" class="btn btn-small">
+            Open
+          </a>
+        {% else %}
+          <p>No license image uploaded.</p>
+        {% endif %}
+      </div>
+    {% endif %}
+
     {% for field in form %}
       <label class="field">
         <span>{{ field.label }}</span>

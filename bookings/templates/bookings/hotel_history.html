@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hotel Bookings</title>
-    <link rel="stylesheet" href="{% static 'accounts/css/hotel-home.css' %}?v=20260223a" />
+    <link rel="stylesheet" href="{% static 'accounts/css/hotel-home.css' %}?v=20260224b" />
     <link rel="stylesheet" href="{% static 'bookings/css/hotel_history.css' %}?v=20260223a" />
   </head>
   <body>
@@ -49,6 +49,13 @@
                 <span class="profile-item__subtitle">View recent reservations</span>
               </span>
             </a>
+            <a class="profile-item" href="{% url 'hotel_reviews' %}" role="menuitem">
+              <span class="profile-item__icon">⭐</span>
+              <span class="profile-item__content">
+                <span class="profile-item__title">Ratings &amp; Reviews</span>
+                <span class="profile-item__subtitle">See guest feedback</span>
+              </span>
+            </a>
             <div class="profile-divider"></div>
             <a class="profile-item profile-item--danger" href="{% url 'logout' %}" role="menuitem">
               <span class="profile-item__icon">↗</span>
@@ -64,6 +71,7 @@
         <nav class="top-links" aria-label="Hotel navigation">
           <a class="top-links__item" href="{% url 'hotel_home' %}">Room Management</a>
           <a class="top-links__item is-active" href="{% url 'hotel_booking_history' %}">Hotel Bookings</a>
+          <a class="top-links__item" href="{% url 'hotel_reviews' %}">Ratings &amp; Reviews</a>
         </nav>
 
         <header class="page-header">

@@ -8,7 +8,7 @@ from rooms.models import Room
 
 
 class Booking(models.Model):
-	PENDING_PAYMENT_EXPIRY_HOURS = 3
+	PENDING_PAYMENT_EXPIRY_HOURS = 12
 
 	class PaymentOption(models.TextChoices):
 		PAY_NOW = "pay_now", "Pay now"
@@ -121,6 +121,15 @@ class Booking(models.Model):
 
 
 class BookingNotification(models.Model):
+	class Type(models.TextChoices):
+		PENDING = Booking.Status.PENDING, "Pending"
+		CONFIRMED = Booking.Status.CONFIRMED, "Confirmed"
+		COMPLETED = Booking.Status.COMPLETED, "Completed"
+		CANCELED = Booking.Status.CANCELED, "Canceled"
+		EXPIRED = Booking.Status.EXPIRED, "Expired"
+		REVIEW_ADDED = "review_added", "Review added"
+		REVIEW_UPDATED = "review_updated", "Review updated"
+
 	recipient = models.ForeignKey(
 		Profile,
 		on_delete=models.CASCADE,
@@ -131,7 +140,7 @@ class BookingNotification(models.Model):
 		on_delete=models.CASCADE,
 		related_name="notifications",
 	)
-	status = models.CharField(max_length=20, choices=Booking.Status.choices)
+	status = models.CharField(max_length=20, choices=Type.choices)
 	message = models.CharField(max_length=255)
 	is_read = models.BooleanField(default=False)
 	created_at = models.DateTimeField(auto_now_add=True)
@@ -169,6 +178,54 @@ class BookingReview(models.Model):
 
 	class Meta:
 		ordering = ("-created_at",)
+
+	def save(self, *args, **kwargs):
+		was_adding = self._state.adding
+		previous_values = None
+		if not was_adding and self.pk:
+			previous_values = BookingReview.objects.filter(id=self.pk).values("rating", "comment").first()
+
+		super().save(*args, **kwargs)
+
+		should_notify_updated_review = (
+			not was_adding
+			and previous_values is not None
+			and (
+				previous_values["rating"] != self.rating
+				or (previous_values["comment"] or "") != (self.comment or "")
+			)
+		)
+		if was_adding:
+			self.notify_hotel_review_event(notification_type=BookingNotification.Type.REVIEW_ADDED)
+		elif should_notify_updated_review:
+			self.notify_hotel_review_event(notification_type=BookingNotification.Type.REVIEW_UPDATED)
+
+	def notify_hotel_review_event(self, *, notification_type: str):
+		if not self.pk or not self.booking_id:
+			return
+
+		hotel_id = Room.objects.filter(bookings__id=self.booking_id).values_list("hotel_id", flat=True).first()
+		if hotel_id is None:
+			return
+
+		if notification_type == BookingNotification.Type.REVIEW_ADDED:
+			message = "A guest submitted a new rating and review."
+		else:
+			message = "A guest updated their rating and review."
+
+		notification, _ = BookingNotification.objects.get_or_create(
+			recipient_id=hotel_id,
+			booking_id=self.booking_id,
+			status=notification_type,
+			defaults={
+				"message": message,
+			},
+		)
+
+		notification.message = message
+		notification.is_read = False
+		notification.created_at = timezone.now()
+		notification.save(update_fields=["message", "is_read", "created_at"])
 
 	def __str__(self) -> str:
 		return f"Review for booking #{self.booking_id} ({self.rating}/5)"

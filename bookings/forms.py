@@ -5,12 +5,20 @@ from .models import Booking, BookingReview
 
 class BookingCheckoutForm(forms.Form):
     PAYMENT_OPTION_CHOICES = Booking.PaymentOption.choices
+    PAYMENT_METHOD_CREDIT_CARD = "credit_card"
+    PAYMENT_METHOD_DIGITAL_PAYMENT = "digital_payment"
+    PAYMENT_METHOD_CHOICES = (
+        ("", "Select payment method"),
+        (PAYMENT_METHOD_CREDIT_CARD, "Credit card"),
+        (PAYMENT_METHOD_DIGITAL_PAYMENT, "Online digital payment"),
+    )
 
     guest_name = forms.CharField(max_length=150)
     guest_email = forms.EmailField()
     guest_phone = forms.CharField(max_length=30, required=False)
     rooms_count = forms.IntegerField(min_value=1, initial=1)
     payment_option = forms.ChoiceField(choices=PAYMENT_OPTION_CHOICES)
+    payment_method = forms.ChoiceField(choices=PAYMENT_METHOD_CHOICES, required=False)
 
     def __init__(self, *args, fixed_email: str = "", max_rooms_available: int | None = None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -42,6 +50,9 @@ class BookingCheckoutForm(forms.Form):
 
         if payment_option == Booking.PaymentOption.PAY_NOW and not guest_phone:
             self.add_error("guest_phone", "Phone number is required to settle payment now.")
+
+        if payment_option == Booking.PaymentOption.PAY_NOW and not cleaned_data.get("payment_method"):
+            self.add_error("payment_method", "Please choose how you want to pay now.")
 
         return cleaned_data
 

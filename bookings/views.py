@@ -11,7 +11,7 @@ from accounts.models import Profile
 from rooms.models import Room
 
 from .forms import BookingCheckoutForm, BookingReviewForm
-from .models import Booking, BookingReview
+from .models import Booking, BookingNotification, BookingReview
 
 
 BOOKING_STATE_LABELS = {
@@ -84,6 +84,7 @@ def checkout_view(request, room_id: int):
 		guest_phone = form.cleaned_data["guest_phone"]
 		rooms_count = form.cleaned_data["rooms_count"]
 		payment_option = form.cleaned_data["payment_option"]
+		payment_method = form.cleaned_data.get("payment_method")
 
 		expire_overdue_pending_bookings(Booking.objects.filter(guest=profile, room=room))
 		room.refresh_from_db(fields=["available_rooms"])
@@ -98,14 +99,21 @@ def checkout_view(request, room_id: int):
 			if locked_room is None or locked_room.available_rooms < rooms_count:
 				form.add_error(None, "Requested number of rooms is no longer available.")
 			else:
-				Booking.objects.create(
+				effective_payment_option = payment_option
+				if (
+					payment_option == Booking.PaymentOption.PAY_NOW
+					and payment_method == BookingCheckoutForm.PAYMENT_METHOD_DIGITAL_PAYMENT
+				):
+					effective_payment_option = Booking.PaymentOption.PAY_LATER
+
+				booking = Booking.objects.create(
 					guest=profile,
 					room=locked_room,
 					guest_name=guest_name,
 					guest_email=account_email,
 					guest_phone=guest_phone,
 					rooms_count=rooms_count,
-					payment_option=payment_option,
+					payment_option=effective_payment_option,
 				)
 				Room.objects.filter(id=locked_room.id).update(
 					available_rooms=F("available_rooms") - rooms_count
@@ -115,6 +123,12 @@ def checkout_view(request, room_id: int):
 					profile.full_name = guest_name
 				profile.phone_number = guest_phone
 				profile.save(update_fields=["full_name", "phone_number"])
+
+				if (
+					payment_option == Booking.PaymentOption.PAY_NOW
+					and payment_method == BookingCheckoutForm.PAYMENT_METHOD_DIGITAL_PAYMENT
+				):
+					return redirect("booking_mock_digital_payment", booking_id=booking.id)
 
 				return redirect("home")
 	room.refresh_from_db(fields=["available_rooms"])
@@ -130,6 +144,43 @@ def checkout_view(request, room_id: int):
 
 
 @login_required
+def mock_digital_payment_view(request, booking_id: int):
+	profile, _ = Profile.objects.get_or_create(
+		user=request.user,
+		defaults={
+			"full_name": request.user.get_full_name() or request.user.username,
+			"account_type": Profile.AccountType.GUEST,
+		},
+	)
+	if profile.account_type != Profile.AccountType.GUEST:
+		return redirect("hotel_home")
+
+	booking = get_object_or_404(
+		Booking.objects.select_related("room", "room__hotel", "room__room_type"),
+		id=booking_id,
+		guest=profile,
+	)
+
+	if request.method == "POST":
+		booking.refresh_status(now=timezone.now(), save=True)
+		if booking.status != Booking.Status.PENDING:
+			return redirect("booking_history")
+
+		booking.payment_option = Booking.PaymentOption.PAY_NOW
+		booking.status = Booking.Status.CONFIRMED
+		booking.save(update_fields=["payment_option", "status"])
+		return redirect("booking_history")
+
+	return render(
+		request,
+		"bookings/mock_digital_payment.html",
+		{
+			"booking": booking,
+		},
+	)
+
+
+@login_required
 def history_view(request):
 	profile, _ = Profile.objects.get_or_create(
 		user=request.user,
@@ -140,6 +191,14 @@ def history_view(request):
 	)
 	if profile.account_type != Profile.AccountType.GUEST:
 		return redirect("hotel_home")
+
+	notification_id = (request.GET.get("notification") or "").strip()
+	if notification_id.isdigit():
+		BookingNotification.objects.filter(
+			id=int(notification_id),
+			recipient=profile,
+			is_read=False,
+		).update(is_read=True)
 
 	available_states = ["all", "pending", "confirmed", "completed", "canceled", "expired"]
 	selected_state = (request.GET.get("state") or "all").strip().lower()
@@ -256,6 +315,14 @@ def hotel_history_view(request):
 	)
 	if profile.account_type != Profile.AccountType.HOTEL:
 		return redirect("home")
+
+	notification_id = (request.GET.get("notification") or "").strip()
+	if notification_id.isdigit():
+		BookingNotification.objects.filter(
+			id=int(notification_id),
+			recipient=profile,
+			is_read=False,
+		).update(is_read=True)
 
 	available_states = ["all", "pending", "confirmed", "completed", "canceled", "expired"]
 	selected_state = (request.GET.get("state") or "all").strip().lower()

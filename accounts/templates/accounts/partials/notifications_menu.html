@@ -11,15 +11,21 @@
       />
     </svg>
     {% if booking_notifications_unread_count > 0 %}
-      <span class="icon-button__dot" aria-hidden="true"></span>
+      <span class="icon-button__count" aria-hidden="true">
+        {% if booking_notifications_unread_count > 9 %}
+          9+
+        {% else %}
+          {{ booking_notifications_unread_count }}
+        {% endif %}
+      </span>
     {% endif %}
   </summary>
   <div class="notification-dropdown" role="menu">
     <p class="notification-title">Notifications</p>
     <ul class="notification-list">
       {% for notification in booking_notifications %}
-        <li class="notification-item">
-          <a class="notification-item__link" href="{{ notification.history_url }}">
+        <li class="notification-item{% if not notification.is_read %} notification-item--unread{% endif %}">
+          <a class="notification-item__link{% if not notification.is_read %} notification-item__link--unread{% endif %}" href="{{ notification.history_url }}">
             <span class="notification-item__text">{{ notification.message }}</span>
             <span class="notification-item__time">{{ notification.created_at|date:"M j, g:i A" }}</span>
           </a>
@@ -35,7 +41,37 @@
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".notification-menu .notification-item__link").forEach(function (link) {
       link.addEventListener("click", function () {
+        var item = this.closest(".notification-item");
         var menu = this.closest(".notification-menu");
+        var list = menu ? menu.querySelector(".notification-list") : null;
+        if (item && item.classList.contains("notification-item--unread")) {
+          item.remove();
+        }
+
+        if (menu && !menu.querySelector(".notification-item--unread")) {
+          var notificationCount = menu.querySelector(".icon-button__count");
+          if (notificationCount) {
+            notificationCount.remove();
+          }
+          var legacyDot = menu.querySelector(".icon-button__dot");
+          if (legacyDot) {
+            legacyDot.remove();
+          }
+
+          if (list && !list.querySelector(".notification-empty")) {
+            var emptyItem = document.createElement("li");
+            emptyItem.className = "notification-empty";
+            emptyItem.textContent = "No notifications yet.";
+            list.appendChild(emptyItem);
+          }
+        } else if (menu) {
+          var updatedUnread = menu.querySelectorAll(".notification-item--unread").length;
+          var countBadge = menu.querySelector(".icon-button__count");
+          if (countBadge) {
+            countBadge.textContent = updatedUnread > 9 ? "9+" : String(updatedUnread);
+          }
+        }
+
         if (menu) {
           menu.removeAttribute("open");
         }

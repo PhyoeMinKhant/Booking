@@ -14,8 +14,14 @@ class ProfileInline(admin.StackedInline):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ("full_name", "account_type", "user", "created_at")
-    list_filter = ("account_type",)
+    list_display = (
+        "full_name",
+        "account_type",
+        "hotel_verification_status",
+        "user",
+        "created_at",
+    )
+    list_filter = ("account_type", "hotel_verification_status")
     search_fields = ("full_name", "user__email", "user__username")
     autocomplete_fields = ("user",)
 
